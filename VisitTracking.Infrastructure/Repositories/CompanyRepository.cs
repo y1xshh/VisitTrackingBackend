@@ -1,0 +1,49 @@
+﻿using Microsoft.EntityFrameworkCore;
+using VisitTracking.Domain.Entities;
+using VisitTracking.Domain.RepositoryInterfaces;
+using VisitTracking.Infrastructure.Data;
+
+public class CompanyRepository : ICompanyRepository
+{
+    private readonly AppDbContext _context;
+
+    public CompanyRepository(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<IEnumerable<Company>> GetAllAsync()
+    {
+        return await _context.Companies
+            .OrderByDescending(x => x.Id)
+            .ToListAsync();
+    }
+
+    public async Task<Company?> GetByIdAsync(int id)
+    {
+        return await _context.Companies
+            .FirstOrDefaultAsync(x => x.Id == id);
+    }
+
+    public async Task AddAsync(Company entity)
+    {
+        await _context.Companies.AddAsync(entity);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task UpdateAsync(Company entity)
+    {
+        _context.Companies.Update(entity);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        var data = await _context.Companies.FindAsync(id);
+        if (data != null)
+        {
+            _context.Companies.Remove(data);
+            await _context.SaveChangesAsync();
+        }
+    }
+}

@@ -1,0 +1,12 @@
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\bin\Release\net9.0\VisitTracking.Domain.deps.json
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\bin\Release\net9.0\VisitTracking.Domain.dll
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\bin\Release\net9.0\VisitTracking.Domain.pdb
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\VisitTracking.Domain.csproj.AssemblyReference.cache
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\VisitTracking.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\VisitTracking.Domain.AssemblyInfoInputs.cache
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\VisitTracking.Domain.AssemblyInfo.cs
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\VisitTracking.Domain.csproj.CoreCompileInputs.cache
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\VisitTracking.Domain.dll
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\refint\VisitTracking.Domain.dll
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\VisitTracking.Domain.pdb
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\ref\VisitTracking.Domain.dll
