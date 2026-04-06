@@ -8,4 +8,6 @@
     public string State { get; set; }        // ✅ FIX
     public string UpdatedBy { get; set; }    // ✅ FIX
     public DateTime UpdatedDate { get; set; } // ✅ FIX
+    public string? CompanyName { get; internal set; }
+    public string? InsertedBy { get; internal set; }
 }

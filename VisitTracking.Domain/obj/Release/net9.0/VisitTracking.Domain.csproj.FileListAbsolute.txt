@@ -6,6 +6,7 @@ D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Doma
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\VisitTracking.Domain.AssemblyInfoInputs.cache
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\VisitTracking.Domain.AssemblyInfo.cs
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\VisitTracking.Domain.csproj.CoreCompileInputs.cache
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\VisitTracking.Domain.sourcelink.json
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\VisitTracking.Domain.dll
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\refint\VisitTracking.Domain.dll
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Domain\obj\Release\net9.0\VisitTracking.Domain.pdb

@@ -32,3 +32,4 @@ D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Appl
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Applicationn\obj\Debug\net9.0\refint\VisitTracking.Application.dll
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Applicationn\obj\Debug\net9.0\VisitTracking.Application.pdb
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Applicationn\obj\Debug\net9.0\ref\VisitTracking.Application.dll
+d:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Applicationn\obj\Debug\net9.0\VisitTracking.Application.sourcelink.json

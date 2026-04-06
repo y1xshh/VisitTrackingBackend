@@ -19,14 +19,16 @@ namespace VisitTracking.Application.Services
             return await _repository.GetAllAsync();
         }
 
-        public async Task<Organisation> GetByIdAsync(int id)
+        public async Task<Organisation?> GetByIdAsync(int id)
         {
             return await _repository.GetByIdAsync(id);
         }
 
-        public async Task<OrganisationDto> GetDtoByIdAsync(int id)
+        // ✅ FIXED DTO METHOD
+        public async Task<OrganisationDto?> GetDtoByIdAsync(int id)
         {
             var entity = await _repository.GetByIdAsync(id);
+
             if (entity == null)
                 return null;
 
@@ -34,16 +36,26 @@ namespace VisitTracking.Application.Services
             {
                 Id = entity.Id,
                 OrganisationName = entity.OrganisationName,
-                CompanyId = (int)entity.CompanyId,
+
+                CompanyId = (int)entity.CompanyId,   // ✅ no casting
+
                 Address = entity.Address,
                 City = entity.City,
                 State = entity.State,
+
+                // ✅ navigation safe
+                CompanyName = entity.Company != null
+                                ? entity.Company.CompanyName
+                                : null,
+
                 UpdatedBy = entity.UpdatedBy,
-                UpdatedDate = (DateTime)entity.UpdatedDate
+
+                // ✅ null safe
+                UpdatedDate = entity.UpdatedDate ?? DateTime.UtcNow
             };
         }
 
-        // Added missing method to implement IOrganisationService
+        // ✅ ADD
         public async Task AddAsync(OrganisationDto dto)
         {
             var organisation = new Organisation
@@ -53,6 +65,10 @@ namespace VisitTracking.Application.Services
                 Address = dto.Address,
                 City = dto.City,
                 State = dto.State,
+
+                InsertedBy = dto.InsertedBy ?? "System",   // ✅ FIX
+                InsertedDate = DateTime.UtcNow,
+
                 UpdatedBy = dto.UpdatedBy,
                 UpdatedDate = dto.UpdatedDate
             };
@@ -60,16 +76,21 @@ namespace VisitTracking.Application.Services
             await _repository.AddAsync(organisation);
         }
 
+        // ✅ UPDATE
         public async Task UpdateAsync(int id, OrganisationDto dto)
         {
             var org = await _repository.GetByIdAsync(id);
-            if (org == null) return;
+
+            if (org == null)
+                return;
 
             org.OrganisationName = dto.OrganisationName;
             org.CompanyId = dto.CompanyId;
+
             org.Address = dto.Address;
             org.City = dto.City;
             org.State = dto.State;
+
             org.UpdatedBy = "System";
             org.UpdatedDate = DateTime.UtcNow;
 

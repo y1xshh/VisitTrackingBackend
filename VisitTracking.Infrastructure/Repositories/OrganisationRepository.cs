@@ -14,17 +14,20 @@ public class OrganisationRepository : IOrganisationRepository
 
     public async Task<List<Organisation>> GetAllAsync()
     {
-        return await _context.Organisations.ToListAsync();
+        return await _context.Organisations
+            .Include(x => x.Company)          // ✅ MUST
+            //.Include(x => x.ContactPeople)    // ✅
+            .Include(x => x.Departments)      // ✅
+            .ToListAsync();
     }
 
-    public async Task<Organisation> GetByIdAsync(int id)
+    public async Task<Organisation?> GetByIdAsync(int id)
     {
-        var organisation = await _context.Organisations
-                                         .FirstOrDefaultAsync(o => o.Id == id);
-        if (organisation == null)
-            return null; // ✅ let service/controller handle 404
-
-        return organisation;
+        return await _context.Organisations
+            .Include(x => x.Company)          // ✅ MUST
+            //.Include(x => x.ContactPeople)
+            .Include(x => x.Departments)
+            .FirstOrDefaultAsync(x => x.Id == id);
     }
 
     public async Task AddAsync(Organisation organisation)

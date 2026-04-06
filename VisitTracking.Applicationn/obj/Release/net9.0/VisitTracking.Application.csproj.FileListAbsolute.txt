@@ -10,6 +10,7 @@ D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Appl
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Applicationn\obj\Release\net9.0\VisitTracking.Application.AssemblyInfoInputs.cache
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Applicationn\obj\Release\net9.0\VisitTracking.Application.AssemblyInfo.cs
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Applicationn\obj\Release\net9.0\VisitTracking.Application.csproj.CoreCompileInputs.cache
+D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Applicationn\obj\Release\net9.0\VisitTracking.Application.sourcelink.json
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Applicationn\obj\Release\net9.0\VisitTra.25F2D56C.Up2Date
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Applicationn\obj\Release\net9.0\VisitTracking.Application.dll
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Applicationn\obj\Release\net9.0\refint\VisitTracking.Application.dll

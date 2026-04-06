@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("VisitTracking.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+82e33071816634dae877e67e5601fc2e710ffe8d")]
 [assembly: System.Reflection.AssemblyProductAttribute("VisitTracking.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("VisitTracking.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

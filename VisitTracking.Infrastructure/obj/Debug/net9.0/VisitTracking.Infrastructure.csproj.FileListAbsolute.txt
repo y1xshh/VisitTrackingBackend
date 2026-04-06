@@ -28,3 +28,4 @@ D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Infr
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Infrastructure\obj\Debug\net9.0\refint\VisitTracking.Infrastructure.dll
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Infrastructure\obj\Debug\net9.0\VisitTracking.Infrastructure.pdb
 D:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Infrastructure\obj\Debug\net9.0\ref\VisitTracking.Infrastructure.dll
+d:\AnilBackendProject\HireFlowAPIBackend\VisitTrackingBackend\VisitTracking.Infrastructure\obj\Debug\net9.0\VisitTracking.Infrastructure.sourcelink.json

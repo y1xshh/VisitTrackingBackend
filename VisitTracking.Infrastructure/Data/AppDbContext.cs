@@ -416,7 +416,7 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PRIMARY");
+             entity.HasKey(e => e.Id).HasName("PRIMARY");
 
             entity.ToTable("users");
 
@@ -436,6 +436,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.IsActive)
                 .HasDefaultValueSql("'1'")
                 .HasColumnName("is_active");
+            entity.Property(e => e.IsFirstLogin)
+                .IsRequired()
+                .HasDefaultValueSql("'1'");
             entity.Property(e => e.Mobile).HasMaxLength(20);
             entity.Property(e => e.PasswordHash).HasMaxLength(255);
             entity.Property(e => e.UpdatedBy)

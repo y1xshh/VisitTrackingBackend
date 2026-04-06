@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Azure.Management.ResourceManager.Fluent.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -158,9 +159,12 @@ namespace VisitTracking.Application.Services
 
             try
             {
-                // ✅ VALIDATION
-                var roleExists = await _context.Set<Role>().AnyAsync(x => x.Id == dto.RoleId);
-                var deptExists = await _context.Set<Department>().AnyAsync(x => x.Id == dto.DepartmentId);
+                // ✅ VALIDATION (Role & Department)
+                var roleExists = await _context.Set<Role>()
+                    .AnyAsync(x => x.Id == dto.RoleId);
+
+                var deptExists = await _context.Set<Department>()
+                    .AnyAsync(x => x.Id == dto.DepartmentId);
 
                 if (!roleExists)
                     throw new Exception("Invalid RoleId");
@@ -168,6 +172,7 @@ namespace VisitTracking.Application.Services
                 if (!deptExists)
                     throw new Exception("Invalid DepartmentId");
 
+                // ✅ GENERATE PASSWORD
                 var randomPassword = GeneratePassword();
 
                 // ✅ CREATE USER
@@ -180,9 +185,7 @@ namespace VisitTracking.Application.Services
                     RoleId = dto.RoleId,
                     DepartmentId = dto.DepartmentId,
                     DesignationId = dto.DesignationId,
-
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(randomPassword),
-
                     IsActive = true,
                     IsFirstLogin = true,
                     InsertedBy = "admin",
@@ -192,47 +195,52 @@ namespace VisitTracking.Application.Services
                 await _context.Users.AddAsync(user);
                 await _context.SaveChangesAsync();
 
-                // ✅ EXTRA FK VALIDATION
+                //Console.WriteLine($"Incoming ReportingManagerId: {dto.ReportingManagerId}");
+
+                // ✅ VALIDATE REPORTING MANAGER (FROM EMPLOYEE TABLE)
                 if (dto.ReportingManagerId.HasValue)
                 {
-                    var managerExists = await _context.Users
-                        .AnyAsync(x => x.Id == dto.ReportingManagerId);
+                    var managerExists = await _context.Set<Employee>()
+                        .AnyAsync(x => x.Id == dto.ReportingManagerId.Value);
 
                     if (!managerExists)
-                        throw new Exception("Invalid ReportingManagerId");
+                    {
+                        throw new Exception($"ReportingManagerId {dto.ReportingManagerId} not found in employees table");
+                    }
                 }
 
-                if (dto.LocationId.HasValue)
-                {
-                    var locationExists = await _context.Users
-                        .AnyAsync(x => x.Id == dto.LocationId.Value);
-
-                    if (!locationExists)
-                        throw new Exception("Invalid LocationId");
-                }
-
+                
                 // ✅ CREATE EMPLOYEE
                 var employee = new Employee
                 {
                     UserId = user.Id,
-                    EmployeeCode = dto.EmployeeCode ?? $"EMP{user.Id}",
+                    EmployeeCode = string.IsNullOrEmpty(dto.EmployeeCode)
+                        ? $"EMP{user.Id}"
+                        : dto.EmployeeCode,
 
                     DesignationId = dto.DesignationId > 0 ? dto.DesignationId : null,
 
-                    ReportingManagerId = dto.ReportingManagerId > 0
-                        ? dto.ReportingManagerId
-                        : null,
+                    ReportingManagerId = dto.ReportingManagerId, // FK to Employee.Id
+                    LocationId = dto.LocationId,
 
-                    LocationId = dto.LocationId > 0
-                        ? dto.LocationId
-                        : null
+                    
                 };
 
                 await _context.Set<Employee>().AddAsync(employee);
                 await _context.SaveChangesAsync();
 
-                // ✅ EMAIL
-                var body = EmpRegEmailTemplate.Build(user.FullName, user.Email, randomPassword);
+                // ✅ OPTIONAL: SELF MANAGER CHECK (EXTRA SAFETY)
+                if (employee.ReportingManagerId == employee.Id)
+                {
+                    throw new Exception("Employee cannot be their own manager");
+                }
+
+                // ✅ SEND EMAIL
+                var body = EmpRegEmailTemplate.Build(
+                    user.FullName,
+                    user.Email,
+                    randomPassword
+                );
 
                 await _emailService.SendEmailAsync(
                     user.Email,
@@ -240,12 +248,13 @@ namespace VisitTracking.Application.Services
                     body
                 );
 
+                // ✅ COMMIT
                 await transaction.CommitAsync();
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                throw;
+                throw new Exception(ex.InnerException?.Message ?? ex.Message);
             }
         }
 

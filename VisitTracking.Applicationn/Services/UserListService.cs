@@ -18,39 +18,56 @@ namespace VisitTracking.Application.Services
         {
             var data = await _repository.GetAllAsync();
 
-            return [.. data.Select(x => new UserListDto
-        {
-            EmployeeCode = x.EmployeeCode,
-            FullName = x.FullName,
-            Email = x.Email,
-            Mobile = x.Mobile,
-            Rolename = x.RoleId,
-            DesignationId = x.DesignationId,
-            DepartmentId = x.DepartmentId,
-            MangerId = (int)x.ReportingManagerId,
-            LocationId = x.LocationId,
-            IsActive = x.IsActive
-        })];
+            return data.Select(user =>
+            {
+                var employee = user.Employees?.FirstOrDefault();
+
+                return new UserListDto
+                {
+                    Id = user.Id,
+
+                    EmployeeCode = employee?.EmployeeCode,
+                    FullName = user.FullName,
+                    Email = user.Email,
+                    Mobile = user.Mobile,
+
+                    RoleId = user.Role?.Id ?? 0,
+                    DesignationId = user.DesignationId,
+                    DepartmentId = user.DepartmentId,
+
+                    ManagerId = employee?.ReportingManagerId,   // ✅ FIXED (no casting)
+                    LocationId = employee?.LocationId,
+
+                    IsActive = user.IsActive
+                };
+            }).ToList();
         }
 
         public async Task<UserListDto?> GetUserByIdAsync(int id)
         {
-            var x = await _repository.GetByIdAsync(id);
+            var user = await _repository.GetByIdAsync(id);
 
-            if (x == null) return null;
+            if (user == null) return null;
+
+             var employee = user.Employees?.FirstOrDefault();
 
             return new UserListDto
             {
-                EmployeeCode = x.EmployeeCode ?? "",
-                FullName = x.FullName ?? "",
-                Email = x.Email ?? "",
-                Mobile = x.Mobile ?? "",
-                Rolename = x.RoleId, // agar int hai to ok
-                DesignationId = x.DesignationId,
-                DepartmentId = x.DepartmentId,
-                MangerId = (int)x.ReportingManagerId,
-                LocationId = x.LocationId,
-                IsActive = x.IsActive
+                Id = user.Id,
+
+                    EmployeeCode = employee?.EmployeeCode,
+                    FullName = user.FullName,
+                    Email = user.Email,
+                    Mobile = user.Mobile,
+
+                    RoleId = user.Role?.Id ?? 0,
+                    DesignationId = user.DesignationId,
+                    DepartmentId = user.DepartmentId,
+
+                    ManagerId = employee?.ReportingManagerId,   // ✅ FIXED (no casting)
+                    LocationId = employee?.LocationId,
+
+                    IsActive = user.IsActive
             };
         }
 

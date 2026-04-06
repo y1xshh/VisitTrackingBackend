@@ -9,12 +9,12 @@ namespace VisitTracking.Api.Controllers
     public class AdminController : ControllerBase
     {
         private readonly IAuthService _authService;
-        private readonly IUserService _UserListService;
+        private readonly IUserListService _UserListService;
 
-        public AdminController(IAuthService authService, IUserService userService)
+        public AdminController(IAuthService authService, IUserListService userListService)
         {
             _authService = authService;
-            _UserListService = userService;
+            _UserListService = userListService;
         }
 
         // ✅ CREATE USER (ADMIN)

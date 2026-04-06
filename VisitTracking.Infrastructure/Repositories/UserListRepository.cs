@@ -15,13 +15,20 @@ namespace VisitTracking.Infrastructure.Repositories
         }
 
         public async Task<List<User>> GetAllAsync()
-        {
-            return await _context.Users.ToListAsync();
+        { 
+
+            return await _context.Users
+                .Include(u => u.Employees)
+                .Include(u => u.Role)
+                .ToListAsync();
         }
 
         public async Task<User?> GetByIdAsync(int id)
         {
-            return await _context.Users.FindAsync(id);
+            return await _context.Users
+            .Include(u => u.Employees)
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Id == id);
         }
 
         public async Task UpdateAsync(User user)
