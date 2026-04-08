@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using VisitTracking.Application.Filter;
 using VisitTracking.Application.Interface;
 using VisitTracking.Application.Services;
 using VisitTracking.Domain.RepositoryInterfaces;
@@ -56,6 +57,7 @@ builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IUserListRepository, UserListRepository>();
 builder.Services.AddScoped<IUserListService, UserListService>();
+builder.Services.AddScoped<FirstLoginCheckFilter>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

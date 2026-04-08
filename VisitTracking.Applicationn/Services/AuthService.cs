@@ -1,5 +1,4 @@
-﻿using Microsoft.Azure.Management.ResourceManager.Fluent.Models;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -73,8 +72,12 @@ namespace VisitTracking.Application.Services
 
             return new LoginResponseDto
             {
-                Token = GenerateJwt(user, role),
-                Role = role
+                Token = GenerateJwt(user, role), // ❗ No token if first login
+                Role = role,
+                IsFirstLogin = (bool)user.IsFirstLogin,
+                Message = (bool)user.IsFirstLogin
+                    ? "Please change your password first"
+                    : "Login successful"
             };
         }
 
@@ -209,7 +212,7 @@ namespace VisitTracking.Application.Services
                     }
                 }
 
-                
+
                 // ✅ CREATE EMPLOYEE
                 var employee = new Employee
                 {
@@ -223,7 +226,7 @@ namespace VisitTracking.Application.Services
                     ReportingManagerId = dto.ReportingManagerId, // FK to Employee.Id
                     LocationId = dto.LocationId,
 
-                    
+
                 };
 
                 await _context.Set<Employee>().AddAsync(employee);
@@ -293,14 +296,57 @@ namespace VisitTracking.Application.Services
         }
 
         // ================= PASSWORD GENERATOR =================
-        private string GeneratePassword()
+        private static string GeneratePassword()
         {
             return "Emp@" + new Random().Next(1000, 9999);
         }
 
         public Task User(UserDto dto)
         {
-            throw new NotImplementedException();
+            var user = new User
+            {
+                FullName = dto.FullName,
+                Email = dto.Email,
+                Mobile = dto.Mobile,
+                //PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.HashPassword)
+            };
+            return _repo.AddAsync(user);
+        }
+
+        public Task UpdateAsync(object user)
+        {
+            var userEntity = user as User;
+            if (userEntity == null)
+                throw new ArgumentException("Invalid user object");
+            return _repo.UpdateAsync(userEntity);
+
+        }
+
+        public Task<User> GetByEmailAsync(string email)
+        {
+            var user = _repo.GetByEmailAsync(email);
+            if (user == null)
+                throw new Exception("User not found");
+            return user;
+        }
+
+        public Task<User> GetUserByIdAsync(int userId)
+        {
+            var user = _repo.GetByIdAsync(userId);
+            if (user == null)
+                throw new Exception("User not found");
+            return user;
+        }
+
+        public Task UpdateAsync(User user)
+        {
+            var existingUser = _repo.GetByIdAsync(user.Id);
+            if (existingUser == null)
+                throw new Exception("User not found");
+            return existingUser;
+            
+
         }
     }
 }
+

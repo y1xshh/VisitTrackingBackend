@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using VisitTracking.Application.DTOs;
+using VisitTracking.Application.Filter;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 
@@ -7,6 +9,10 @@ namespace VisitTracking.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+
+    [Authorize] // ✅ LOGIN REQUIRED
+    [ServiceFilter(typeof(FirstLoginCheckFilter))] // ✅ FORCE PASSWORD CHANGE CHECK
+
     public class EmployeeController : ControllerBase
     {
         private readonly IEmployeeService _service;
@@ -38,7 +44,7 @@ namespace VisitTracking.Api.Controllers
 
         // ✅ CREATE
         [HttpPost]
-        public async Task<IActionResult> Create(EmployeeDto dto)
+        public async Task<IActionResult> Create([FromBody] EmployeeDto dto)
         {
             await _service.AddAsync(dto);
             return Ok("Employee created successfully");
@@ -46,7 +52,7 @@ namespace VisitTracking.Api.Controllers
 
         // ✅ UPDATE
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, EmployeeDto dto)
+        public async Task<IActionResult> Update(int id, [FromBody] EmployeeDto dto)
         {
             await _service.UpdateAsync(id, dto);
             return Ok("Employee updated successfully");

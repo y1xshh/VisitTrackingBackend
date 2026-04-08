@@ -106,4 +106,9 @@ public class ContactpersonService : IContactpersonService
     {
         await _repository.DeleteAsync(id);
     }
+
+    public Task<ContactpersonDto?> GetByEmailAsync(string email)
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -1,4 +1,5 @@
-﻿public class OrganisationDto
+﻿namespace VisitTracking.Application.DTOs;
+public class OrganisationDto
 {
     public int Id { get; set; }
     public string OrganisationName { get; set; }
