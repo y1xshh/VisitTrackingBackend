@@ -53,18 +53,47 @@ namespace VisitTracking.Application.Services
         }
 
         // ================= LOGIN =================
+        // ================= LOGIN =================
         public async Task<LoginResponseDto> Login(LoginDto dto)
         {
             var user = await _repo.GetByEmailAsync(dto.Email);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+            if (user == null)
             {
                 return new LoginResponseDto
                 {
+                    Token = null,
+                    Role = null,
+                    IsFirstLogin = false,
                     Message = "Invalid credentials"
                 };
             }
 
+            // ✅ Check password first
+            if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+            {
+                return new LoginResponseDto
+                {
+                    Token = null,
+                    Role = null,
+                    IsFirstLogin = (bool)user.IsFirstLogin,
+                    Message = "Invalid credentials"
+                };
+            }
+
+            // ✅ Check first login
+            if ((bool)user.IsFirstLogin)
+            {
+                return new LoginResponseDto
+                {
+                    Token = null,
+                    Role = null,
+                    IsFirstLogin = true,
+                    Message = "Please change your password first"
+                };
+            }
+
+            // Normal login
             var role = await _context.Set<Role>()
                 .Where(r => r.Id == user.RoleId)
                 .Select(r => r.RoleName)
@@ -72,14 +101,15 @@ namespace VisitTracking.Application.Services
 
             return new LoginResponseDto
             {
-                Token = GenerateJwt(user, role), // ❗ No token if first login
+                Token = GenerateJwt(user, role),
                 Role = role,
-                IsFirstLogin = (bool)user.IsFirstLogin,
-                Message = (bool)user.IsFirstLogin
-                    ? "Please change your password first"
-                    : "Login successful"
+                IsFirstLogin = false,
+                Message = "Login successful"
+
+
             };
         }
+           
 
         // ================= JWT =================
         private string GenerateJwt(User user, string role)
@@ -264,7 +294,8 @@ namespace VisitTracking.Application.Services
         // ================= CHANGE PASSWORD =================
         public async Task<string> ChangePassword(ChangePasswordDto dto)
         {
-            var user = await _repo.GetByEmailAsync(dto.Email);
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
             if (user == null)
                 return "User not found";
@@ -275,7 +306,9 @@ namespace VisitTracking.Application.Services
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
             user.IsFirstLogin = false;
 
-            await _repo.UpdateAsync(user);
+            // ✅ Update DB
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync(); // 🔑 This is mandatory
 
             return "Password changed successfully";
         }

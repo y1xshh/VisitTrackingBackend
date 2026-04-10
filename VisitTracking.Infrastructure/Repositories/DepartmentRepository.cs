@@ -14,24 +14,30 @@ public class DepartmentRepository : IDepartmentRepository
 
     public async Task<List<Department>> GetAllAsync()
     {
-        return await _context.Departments.ToListAsync();
+        return await _context.Departments
+            .Where(x => x.IsActive == true)
+            .ToListAsync();
     }
 
     public async Task<Department> GetByIdAsync(int id)
     {
-        return await _context.Departments.FindAsync(id);
+        var dep = await _context.Departments
+            .Include(x => x.Organisation) // ✅ MUST
+            .FirstOrDefaultAsync(x => x.Id == id);
+        return dep;
     }
-
     public async Task AddAsync(Department department)
     {
-        await _context.Departments.AddAsync(department);
-        await _context.SaveChangesAsync();
+        var org = await _context.Organisations.FindAsync(department.OrganisationId) ?? throw new Exception("Organisation not found");
     }
 
     public async Task UpdateAsync(Department department)
     {
-        _context.Departments.Update(department);
+      var existingDep = await _context.Departments.FindAsync(department.Id) ?? throw new Exception("Department not found");
+        existingDep.DepartmentName = department.DepartmentName;
+        existingDep.OrganisationId = department.OrganisationId;
         await _context.SaveChangesAsync();
+
     }
 
     public async Task DeleteAsync(int id)
@@ -42,5 +48,17 @@ public class DepartmentRepository : IDepartmentRepository
             _context.Departments.Remove(dep);
             await _context.SaveChangesAsync();
         }
+    }
+
+    public Task DeleteAsync(Department dep)
+    {
+       var existingDep = _context.Departments.Find(dep.Id);
+        if (existingDep != null)
+        {
+            _context.Departments.Remove(existingDep);
+            return _context.SaveChangesAsync();
+        }
+        return Task.CompletedTask;
+
     }
 }

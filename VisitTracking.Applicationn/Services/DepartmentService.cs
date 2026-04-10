@@ -17,12 +17,18 @@ namespace VisitTracking.Application.Services
 
         public async Task<List<Department>> GetAllAsync()
         {
-            return await _repository.GetAllAsync();
+           
+           var data = await _repository.GetAllAsync();
+            return data;    
+
+
         }
 
         public async Task<Department> GetByIdAsync(int id)
         {
-            return await _repository.GetByIdAsync(id);
+            var dep = await _repository.GetByIdAsync(id);   
+            return dep;
+
         }
 
         public async Task Create(DepartmentDto dto)
@@ -48,10 +54,12 @@ namespace VisitTracking.Application.Services
 
             await _repository.UpdateAsync(dep);
         }
-
         public async Task DeleteAsync(int id)
         {
-            await _repository.DeleteAsync(id);
+            var dep = await _repository.GetByIdAsync(id);
+            if (dep == null) return;
+
+            await _repository.DeleteAsync(dep);
         }
     }
 }

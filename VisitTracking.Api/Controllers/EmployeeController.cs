@@ -1,69 +1,48 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using VisitTracking.Application.DTOs;
-using VisitTracking.Application.Filter;
 using VisitTracking.Application.Interface;
-using VisitTracking.Domain.Entities;
 
-namespace VisitTracking.Api.Controllers
+[ApiController]
+[Route("api/[controller]")]
+public class EmployeeController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
+    private readonly IEmployeeService _service;
 
-    [Authorize] // ✅ LOGIN REQUIRED
-    [ServiceFilter(typeof(FirstLoginCheckFilter))] // ✅ FORCE PASSWORD CHANGE CHECK
-
-    public class EmployeeController : ControllerBase
+    public EmployeeController(IEmployeeService service)
     {
-        private readonly IEmployeeService _service;
+        _service = service;
+    }
 
-        public EmployeeController(IEmployeeService service)
-        {
-            _service = service;
-        }
+    
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var data = await _service.GetAllAsync();
+        return Ok(data);
+    }
 
-        // ✅ GET ALL
-        [HttpGet]
-        public async Task<ActionResult<List<Employee>>> GetAll()
-        {
-            var data = await _service.GetAllAsync();
-            return Ok(data);
-        }
+    
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var data = await _service.GetByIdAsync(id);
+        if (data == null) return NotFound();
+        return Ok(data);
+    }
 
-        // ✅ GET BY ID
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Employee>> GetById(int id)
-        {
-            var data = await _service.GetByIdAsync(id);
+    
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, EmployeeDto dto)
+    {
+        await _service.UpdateAsync(id, dto);
+        return Ok("Employee updated successfully");
+    }
 
-            if (data == null)
-                return NotFound("Employee not found");
-
-            return Ok(data);
-        }
-
-        // ✅ CREATE
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] EmployeeDto dto)
-        {
-            await _service.AddAsync(dto);
-            return Ok("Employee created successfully");
-        }
-
-        // ✅ UPDATE
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] EmployeeDto dto)
-        {
-            await _service.UpdateAsync(id, dto);
-            return Ok("Employee updated successfully");
-        }
-
-        // ✅ DELETE
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            await _service.DeleteAsync(id);
-            return Ok("Employee deleted successfully");
-        }
+    
+    [HttpGet("reporting-manager-dropdown")]
+    public async Task<IActionResult> GetReportingManagerDropdown()
+    {
+        var data = await _service.GetReportingManagerDropdown();
+        return Ok(data);
     }
 }

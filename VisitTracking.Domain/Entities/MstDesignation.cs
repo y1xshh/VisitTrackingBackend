@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace VisitTracking.Domain.Entities;
 
-public partial class Outcometype
+public partial class MstDesignation
 {
     public int Id { get; set; }
 
-    public string? OutcomeName { get; set; }
+    public string DesignationName { get; set; } = null!;
 
-    public bool? IsRevenueLinked { get; set; }
+    public int? DepartmentId { get; set; }
 
     public bool? IsActive { get; set; }
 
@@ -20,4 +20,8 @@ public partial class Outcometype
     public string? UpdatedBy { get; set; }
 
     public DateTime? UpdatedDate { get; set; }
+
+    public virtual Department? Department { get; set; }
+
+    public virtual ICollection<Employee> Employees { get; set; } = new List<Employee>();
 }

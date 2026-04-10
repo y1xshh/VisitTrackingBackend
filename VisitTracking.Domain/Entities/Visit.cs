@@ -9,7 +9,7 @@ public partial class Visit
 
     public string? VisitCode { get; set; }
 
-    public DateTime VisitDate { get; set; }
+    public DateTime? VisitDate { get; set; }
 
     public int? EmployeeId { get; set; }
 
@@ -80,6 +80,4 @@ public partial class Visit
     public virtual ICollection<Visitattachment> Visitattachments { get; set; } = new List<Visitattachment>();
 
     public virtual ICollection<Visitfollowup> Visitfollowups { get; set; } = new List<Visitfollowup>();
-
- 
 }

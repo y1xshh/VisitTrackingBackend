@@ -14,5 +14,6 @@
         public string? Pincode { get; set; }
 
         public bool? IsActive { get; set; }
+
     }
 }

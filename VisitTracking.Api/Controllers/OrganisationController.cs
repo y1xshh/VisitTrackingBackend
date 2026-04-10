@@ -35,7 +35,7 @@ public class OrganisationController : ControllerBase
 
     // ✅ CREATE (FIXED DTO)
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateOrganisationDto dto)
+    public async Task<IActionResult> Create([FromBody] OrganisationDto dto)
     {
         await _service.AddAsync(dto);
         return Ok(new { message = "Organisation created successfully" });
@@ -43,7 +43,7 @@ public class OrganisationController : ControllerBase
 
     // ✅ UPDATE (FIXED DTO)
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateOrganisationDto dto)
+    public async Task<IActionResult> Update(int id, [FromBody] OrganisationDto dto)
     {
         await _service.UpdateAsync(id, dto);
         return Ok(new { message = "Updated successfully" });

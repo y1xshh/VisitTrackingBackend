@@ -3,13 +3,15 @@ using System.Collections.Generic;
 
 namespace VisitTracking.Domain.Entities;
 
-public partial class Outcometype
+public partial class MstLocation
 {
     public int Id { get; set; }
 
-    public string? OutcomeName { get; set; }
+    public string LocationName { get; set; } = null!;
 
-    public bool? IsRevenueLinked { get; set; }
+    public string? State { get; set; }
+
+    public string? Country { get; set; }
 
     public bool? IsActive { get; set; }
 
@@ -20,4 +22,6 @@ public partial class Outcometype
     public string? UpdatedBy { get; set; }
 
     public DateTime? UpdatedDate { get; set; }
+
+    public virtual ICollection<Employee> Employees { get; set; } = new List<Employee>();
 }

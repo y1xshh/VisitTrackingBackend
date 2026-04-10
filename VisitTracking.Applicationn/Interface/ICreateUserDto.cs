@@ -1,6 +1,6 @@
 ﻿namespace VisitTracking.Application.Interface
 {
-    public class CreateUserDto
+    public class ICreateUserDto
     {
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using VisitTracking.Application.Filter;
 using VisitTracking.Application.Interface;
+using VisitTracking.Application.Interfaces;
 using VisitTracking.Application.Services;
 using VisitTracking.Domain.RepositoryInterfaces;
 using VisitTracking.Infrastructure.Data;
@@ -58,6 +59,10 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IUserListRepository, UserListRepository>();
 builder.Services.AddScoped<IUserListService, UserListService>();
 builder.Services.AddScoped<FirstLoginCheckFilter>();
+builder.Services.AddScoped<IDesignationRepository, DesignationRepository>();
+builder.Services.AddScoped<IDesignationService, DesignationService>();
+builder.Services.AddScoped<ILocationRepository, LocationRepository>();
+builder.Services.AddScoped<ILocationService, LocationService>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

@@ -1,17 +1,11 @@
 ﻿using VisitTracking.Application.DTOs;
-using VisitTracking.Domain.Entities;
 
-    namespace VisitTracking.Application.Interface
-    {
-        public interface IEmployeeService
-        {
-            Task<List<Employee>> GetAllAsync();
-            Task<Employee> GetByIdAsync(int id);
-            Task AddAsync(EmployeeDto dto);
-            Task UpdateAsync(int id, EmployeeDto dto);
-            Task DeleteAsync(int id);
-        }
-    };
-        
-    
+namespace VisitTracking.Application.Interface;
 
+public interface IEmployeeService
+{
+    Task<List<EmployeeDto>> GetAllAsync();
+    Task<EmployeeDto?> GetByIdAsync(int id);
+    Task UpdateAsync(int id, EmployeeDto dto);
+    Task<List<EmployeeDropdownDto>> GetReportingManagerDropdown();
+}

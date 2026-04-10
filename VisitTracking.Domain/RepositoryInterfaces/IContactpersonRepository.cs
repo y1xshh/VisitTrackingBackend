@@ -9,5 +9,7 @@ namespace VisitTracking.Domain.RepositoryInterfaces
         Task AddAsync(Contactperson entity);
         Task UpdateAsync(Contactperson entity);
         Task DeleteAsync(int id);
+        Task GetByEmailAsync(string email);
+        Task DeleteAsync(Contactperson entity);
     }
 }

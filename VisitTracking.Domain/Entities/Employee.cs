@@ -27,7 +27,11 @@ public partial class Employee
 
     public DateTime? UpdatedDate { get; set; }
 
+    public virtual MstDesignation? Designation { get; set; }
+
     public virtual ICollection<Employee> InverseReportingManager { get; set; } = new List<Employee>();
+
+    public virtual MstLocation? Location { get; set; }
 
     public virtual Employee? ReportingManager { get; set; }
 

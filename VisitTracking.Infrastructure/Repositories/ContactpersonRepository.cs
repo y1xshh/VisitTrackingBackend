@@ -55,4 +55,14 @@ public class ContactpersonRepository : IContactpersonRepository
             await _context.SaveChangesAsync();
         }
     }
+
+    public Task GetByEmailAsync(string email)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task DeleteAsync(Contactperson entity)
+    {
+        throw new NotImplementedException();
+    }
 }

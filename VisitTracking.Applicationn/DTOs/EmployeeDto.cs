@@ -2,11 +2,21 @@
 {
     public class EmployeeDto
     {
-        public string? EmployeeCode { get; set; } // ✅ ADD THIS
-        public int UserId { get; set; }
-        public int DesignationId { get; set; }
+        public int Id { get; set; }
+        public string? EmployeeCode { get; set; }
+
+        public int? UserId { get; set; }
+        public int? DesignationId { get; set; }
         public int? ReportingManagerId { get; set; }
         public int? LocationId { get; set; }
-        public bool IsActive { get; set; }
+
+        public bool? IsActive { get; set; }
+
+        // ✅ Display fields
+        public string? DesignationName { get; set; }
+        public string? LocationName { get; set; }
+
+        // 🔥 Updated
+        public string? ReportingManagerDisplay { get; set; }
     }
 }

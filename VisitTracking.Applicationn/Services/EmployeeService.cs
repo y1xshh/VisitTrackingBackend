@@ -1,81 +1,85 @@
 ﻿using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
-using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 
-namespace VisitTracking.Application.Services
+
+public class EmployeeService : IEmployeeService
 {
-    public class EmployeeService : IEmployeeService
+    private readonly IEmployeeRepository _repository;
+
+    public EmployeeService(IEmployeeRepository repository)
     {
-        private readonly IEmployeeRepository _repo;
+        _repository = repository;
+    }
 
-        public EmployeeService(IEmployeeRepository repo)
+    public async Task<List<EmployeeDto>> GetAllAsync()
+    {
+        var data = await _repository.GetAllAsync();
+
+        return data.Select(x => new EmployeeDto
         {
-            _repo = repo;
-        }
+            Id = x.Id,
+            EmployeeCode = x.EmployeeCode,
+            UserId = x.UserId,
+            DesignationId = x.DesignationId,
+            ReportingManagerId = x.ReportingManagerId,
+            LocationId = x.LocationId,
+            IsActive = x.IsActive,
 
-        public async Task<List<Employee>> GetAllAsync()
+            DesignationName = x.Designation != null ? x.Designation.DesignationName : null,
+            LocationName = x.Location != null ? x.Location.LocationName : null
+
+        }).ToList();
+    }
+
+    public async Task<EmployeeDto?> GetByIdAsync(int id)
+    {
+        var x = await _repository.GetByIdAsync(id);
+
+        if (x == null) return null;
+
+        return new EmployeeDto
         {
-            return await _repo.GetAllAsync();
-        }
+            Id = x.Id,
+            EmployeeCode = x.EmployeeCode,
+            UserId = x.UserId,
+            DesignationId = x.DesignationId,
+            ReportingManagerId = x.ReportingManagerId,
+            LocationId = x.LocationId,
+            IsActive = x.IsActive,
 
-        public async Task<Employee> GetByIdAsync(int id)
+            DesignationName = x.Designation?.DesignationName,
+            LocationName = x.Location?.LocationName
+        };
+    }
+
+    public async Task UpdateAsync(int id, EmployeeDto dto)
+    {
+        var emp = await _repository.GetByIdAsync(id);
+
+        if (emp == null) return;
+
+        emp.EmployeeCode = dto.EmployeeCode;
+        emp.UserId = dto.UserId;
+        emp.DesignationId = dto.DesignationId;
+        emp.ReportingManagerId = dto.ReportingManagerId;
+        emp.LocationId = dto.LocationId;
+
+        emp.UpdatedBy = "System";
+        emp.UpdatedDate = DateTime.UtcNow;
+
+        await _repository.UpdateAsync(emp);
+    }
+
+
+    public async Task<List<EmployeeDropdownDto>> GetReportingManagerDropdown()
+    {
+        var data = await _repository.GetAllAsync();
+        var employeeList = data.Select(x => new EmployeeDropdownDto
         {
-            return await _repo.GetByIdAsync(id);
-        }
-
-        public async Task AddAsync(EmployeeDto dto)
-        {
-            var employee = new Employee
-            {
-                // ✅ FIX: correct mapping
-                EmployeeCode = dto.EmployeeCode,
-
-                UserId = dto.UserId,
-                DesignationId = dto.DesignationId,
-
-                // ✅ FIX: avoid FK error
-                ReportingManagerId = dto.ReportingManagerId > 0
-                    ? dto.ReportingManagerId
-                    : null,
-
-                LocationId = dto.LocationId > 0
-                    ? dto.LocationId
-                    : null,
-
-                IsActive = dto.IsActive
-            };
-
-            await _repo.AddAsync(employee);
-        }
-
-        public async Task UpdateAsync(int id, EmployeeDto dto)
-        {
-            var employee = await _repo.GetByIdAsync(id);
-
-            if (employee == null)
-                throw new Exception("Employee not found");
-
-            employee.EmployeeCode = dto.EmployeeCode;
-            employee.UserId = dto.UserId;
-            employee.DesignationId = dto.DesignationId;
-
-            employee.ReportingManagerId = dto.ReportingManagerId > 0
-                ? dto.ReportingManagerId
-                : null;
-
-            employee.LocationId = dto.LocationId > 0
-                ? dto.LocationId
-                : null;
-
-            employee.IsActive = dto.IsActive;
-
-            await _repo.UpdateAsync(employee);
-        }
-
-        public async Task DeleteAsync(int id)
-        {
-            await _repo.DeleteAsync(id);
-        }
+            Id = x.Id,
+            DisplayName = x.User != null ? x.User.FullName : $"Employee {x.Id}"
+        }).ToList();
+        return employeeList;
     }
 }

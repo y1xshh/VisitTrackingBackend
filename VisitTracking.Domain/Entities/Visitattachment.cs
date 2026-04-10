@@ -1,4 +1,7 @@
-﻿namespace VisitTracking.Domain.Entities;
+﻿using System;
+using System.Collections.Generic;
+
+namespace VisitTracking.Domain.Entities;
 
 public partial class Visitattachment
 {

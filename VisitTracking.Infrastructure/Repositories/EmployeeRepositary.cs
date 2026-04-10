@@ -3,29 +3,26 @@ using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 using VisitTracking.Infrastructure.Data;
 
-public class EmployeeRepository : IEmployeeRepository
+public class EmployeeRepository(AppDbContext context) : IEmployeeRepository
 {
-    private readonly AppDbContext _context;
-
-    public EmployeeRepository(AppDbContext context)
-    {
-        _context = context;
-    }
+    private readonly AppDbContext _context = context;
 
     public async Task<List<Employee>> GetAllAsync()
     {
-        return await _context.Employees.ToListAsync();
+        return await _context.Employees
+            .Include(x => x.Designation)
+            .Include(x => x.Location)
+            .Include(x => x.User)
+            .OrderByDescending(x => x.Id)
+            .ToListAsync();
     }
 
-    public async Task<Employee> GetByIdAsync(int id)
+    public async Task<Employee?> GetByIdAsync(int id)
     {
-        return await _context.Employees.FindAsync(id);
-    }
-
-    public async Task AddAsync(Employee employee)
-    {
-        await _context.Employees.AddAsync(employee);
-        await _context.SaveChangesAsync();
+        return await _context.Employees
+            .Include(x => x.Designation)
+            .Include(x => x.Location)
+            .FirstOrDefaultAsync(x => x.Id == id);
     }
 
     public async Task UpdateAsync(Employee employee)
@@ -34,14 +31,5 @@ public class EmployeeRepository : IEmployeeRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(int id)
-    {
-        var employee = await _context.Employees.FindAsync(id);
-        if (employee != null)
-        {
-            _context.Employees.Remove(employee);
-            await _context.SaveChangesAsync();
-        }
-    }
+   
 }
-

@@ -3,6 +3,8 @@ using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 using VisitTracking.Infrastructure.Data;
 
+namespace VisitTracking.Infrastructure.Repositories;
+
 public class OrganisationRepository : IOrganisationRepository
 {
     private readonly AppDbContext _context;
@@ -15,18 +17,15 @@ public class OrganisationRepository : IOrganisationRepository
     public async Task<List<Organisation>> GetAllAsync()
     {
         return await _context.Organisations
-            .Include(x => x.Company)          // ✅ MUST
-            //.Include(x => x.ContactPeople)    // ✅
-            .Include(x => x.Departments)      // ✅
+            .Where(x => x.IsActive == true)
+            .Include(x => x.Company)       // ✅ correct
             .ToListAsync();
     }
 
     public async Task<Organisation?> GetByIdAsync(int id)
     {
         return await _context.Organisations
-            .Include(x => x.Company)          // ✅ MUST
-            //.Include(x => x.ContactPeople)
-            .Include(x => x.Departments)
+            .Include(x => x.Company)
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 

@@ -11,7 +11,7 @@ public partial class AppDbContext : DbContext
     {
     }
 
-    
+
     public virtual DbSet<Auditlog> Auditlogs { get; set; }
 
     public virtual DbSet<Company> Companies { get; set; }
@@ -27,6 +27,10 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<Expenserate> Expenserates { get; set; }
 
     public virtual DbSet<Funnelstage> Funnelstages { get; set; }
+
+    public virtual DbSet<MstDesignation> MstDesignations { get; set; }
+
+    public virtual DbSet<MstLocation> MstLocations { get; set; }
 
     public virtual DbSet<Organisation> Organisations { get; set; }
 
@@ -124,9 +128,9 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.CompanyId, "CompanyId");
 
-            entity.HasIndex(e => e.DepartmentId, "DepartmentId");
-
             entity.HasIndex(e => e.OrganisationId, "OrganisationId");
+
+            entity.HasIndex(e => e.DepartmentId, "ck_contactp_department");
 
             entity.Property(e => e.Designation).HasMaxLength(100);
             entity.Property(e => e.Email).HasMaxLength(150);
@@ -134,7 +138,6 @@ public partial class AppDbContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("inserted_by");
             entity.Property(e => e.InsertedDate)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
@@ -157,7 +160,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.Department).WithMany(p => p.Contactpeople)
                 .HasForeignKey(d => d.DepartmentId)
-                .HasConstraintName("contactpersons_ibfk_3");
+                .HasConstraintName("ck_contactp_department");
 
             entity.HasOne(d => d.Organisation).WithMany(p => p.Contactpeople)
                 .HasForeignKey(d => d.OrganisationId)
@@ -206,6 +209,10 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.UserId, "UserId");
 
+            entity.HasIndex(e => e.LocationId, "ck_employee_location");
+
+            entity.HasIndex(e => e.DesignationId, "fk_employees_designation");
+
             entity.Property(e => e.EmployeeCode).HasMaxLength(50);
             entity.Property(e => e.InsertedBy)
                 .HasMaxLength(50)
@@ -224,6 +231,14 @@ public partial class AppDbContext : DbContext
                 .ValueGeneratedOnAddOrUpdate()
                 .HasColumnType("datetime")
                 .HasColumnName("updated_date");
+
+            entity.HasOne(d => d.Designation).WithMany(p => p.Employees)
+                .HasForeignKey(d => d.DesignationId)
+                .HasConstraintName("fk_employees_designation");
+
+            entity.HasOne(d => d.Location).WithMany(p => p.Employees)
+                .HasForeignKey(d => d.LocationId)
+                .HasConstraintName("ck_employee_location");
 
             entity.HasOne(d => d.ReportingManager).WithMany(p => p.InverseReportingManager)
                 .HasForeignKey(d => d.ReportingManagerId)
@@ -327,6 +342,70 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("updated_date");
         });
 
+        modelBuilder.Entity<MstDesignation>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.ToTable("mst_designation");
+
+            entity.HasIndex(e => e.DepartmentId, "idx_department");
+
+            entity.HasIndex(e => new { e.DesignationName, e.DepartmentId }, "uk_designation_department").IsUnique();
+
+            entity.Property(e => e.DesignationName).HasMaxLength(150);
+            entity.Property(e => e.InsertedBy)
+                .HasMaxLength(50)
+                .HasColumnName("inserted_by");
+            entity.Property(e => e.InsertedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("inserted_date");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValueSql("'1'")
+                .HasColumnName("is_active");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(50)
+                .HasColumnName("updated_by");
+            entity.Property(e => e.UpdatedDate)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasColumnType("datetime")
+                .HasColumnName("updated_date");
+
+            entity.HasOne(d => d.Department).WithMany(p => p.MstDesignations)
+                .HasForeignKey(d => d.DepartmentId)
+                .HasConstraintName("fk_designation_department");
+        });
+
+        modelBuilder.Entity<MstLocation>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.ToTable("mst_location");
+
+            entity.Property(e => e.Country)
+                .HasMaxLength(50)
+                .HasColumnName("country");
+            entity.Property(e => e.InsertedBy)
+                .HasMaxLength(50)
+                .HasColumnName("inserted_by");
+            entity.Property(e => e.InsertedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("inserted_date");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValueSql("'1'")
+                .HasColumnName("is_active");
+            entity.Property(e => e.LocationName).HasMaxLength(50);
+            entity.Property(e => e.State).HasMaxLength(50);
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(50)
+                .HasColumnName("updated_by");
+            entity.Property(e => e.UpdatedDate)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasColumnType("datetime")
+                .HasColumnName("updated_date");
+        });
+
         modelBuilder.Entity<Organisation>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PRIMARY");
@@ -356,10 +435,6 @@ public partial class AppDbContext : DbContext
                 .ValueGeneratedOnAddOrUpdate()
                 .HasColumnType("datetime")
                 .HasColumnName("updated_date");
-
-            entity.HasOne(d => d.Company).WithMany(p => p.Organisations)
-                .HasForeignKey(d => d.CompanyId)
-                .HasConstraintName("organisations_ibfk_1");
         });
 
         modelBuilder.Entity<Outcometype>(entity =>
@@ -416,7 +491,7 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-             entity.HasKey(e => e.Id).HasName("PRIMARY");
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
 
             entity.ToTable("users");
 
@@ -545,7 +620,7 @@ public partial class AppDbContext : DbContext
 
             entity.Property(e => e.FileName).HasMaxLength(255);
             entity.Property(e => e.FilePath).HasMaxLength(255);
-            entity.Property(e => e.FileType).HasMaxLength(50);
+            entity.Property(e => e.FileType).HasMaxLength(255);
             entity.Property(e => e.InsertedBy)
                 .HasMaxLength(50)
                 .HasColumnName("inserted_by");

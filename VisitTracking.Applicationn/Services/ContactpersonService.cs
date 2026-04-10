@@ -16,11 +16,10 @@ public class ContactpersonService : IContactpersonService
     {
         var data = await _repository.GetAllAsync();
 
-        return data.Select(x => new ContactpersonDto
+        return [.. data.Select(x => new ContactpersonDto
         {
+            Id = x.Id,
             Name = x.Name,
-
-          
             Designation = x.Designation,
             Mobile = x.Mobile,
             Email = x.Email,
@@ -29,9 +28,8 @@ public class ContactpersonService : IContactpersonService
             CompanyName = x.Company?.CompanyName,
             DepartmentName = x.Department?.DepartmentName,
             OrganisationName = x.Organisation?.OrganisationName
-        }).ToList();
+        })];
     }
-
     // ✅ GET BY ID
     public async Task<ContactpersonDto?> GetByIdAsync(int id)
     {
@@ -40,22 +38,18 @@ public class ContactpersonService : IContactpersonService
 
         return new ContactpersonDto
         {
-        
+            Id = x.Id,
             Name = x.Name,
-
-            //Designation = x.Id,// 🔥 Designation logic (both support)
-
+            Designation = x.Designation,
             Mobile = x.Mobile,
             Email = x.Email,
             IsActive = x.IsActive ?? false,
 
             CompanyName = x.Company?.CompanyName,
             DepartmentName = x.Department?.DepartmentName,
-            OrganisationName = x.Organisation?.OrganisationName,
-            Designation = x.Designation
+            OrganisationName = x.Organisation?.OrganisationName
         };
     }
-
     // ✅ CREATE
     public async Task Create(ContactpersonDto dto)
     {
@@ -79,32 +73,33 @@ public class ContactpersonService : IContactpersonService
     }
 
     // ✅ UPDATE
-    public async Task UpdateAsync(int id, ContactpersonDto dto)
-    {
-        var data = await _repository.GetByIdAsync(id);
-        if (data == null) return;
+  public async Task UpdateAsync(int id, ContactpersonDto dto)
+{
+    var data = await _repository.GetByIdAsync(id);
+    if (data == null) return;
 
-        data.CompanyId = dto.CompanyId;
-        data.OrganisationId = dto.OrganisationId;
-        data.DepartmentId = dto.DepartmentId;
+    data.CompanyId = dto.CompanyId;
+    data.OrganisationId = dto.OrganisationId;
+    data.DepartmentId = dto.DepartmentId;
 
-        data.Designation = dto.Designation;
-        data.Designation = dto.Designation; data.Name = dto.Name;
+    data.Designation = dto.Designation;
+    data.Name = dto.Name;
+    data.Mobile = dto.Mobile;
+    data.Email = dto.Email;
+    data.Remarks = dto.Remark;
+    data.IsActive = dto.IsActive;
+    data.UpdatedDate = DateTime.Now;
 
-        data.Name = dto.Name;
-        data.Mobile = dto.Mobile;
-        data.Email = dto.Email;
-        data.Remarks = dto.Remark;
-        data.IsActive = dto.IsActive;
-        data.UpdatedDate = DateTime.Now;
-
-        await _repository.UpdateAsync(data);
-    }
+    await _repository.UpdateAsync(data);
+}
 
     // ✅ DELETE
     public async Task DeleteAsync(int id)
     {
-        await _repository.DeleteAsync(id);
+        var entity = await _repository.GetByIdAsync(id);
+        if (entity == null) return;
+
+        await _repository.DeleteAsync(entity);
     }
 
     public Task<ContactpersonDto?> GetByEmailAsync(string email)

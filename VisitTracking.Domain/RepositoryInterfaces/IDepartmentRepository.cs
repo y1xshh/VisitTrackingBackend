@@ -9,5 +9,6 @@ namespace VisitTracking.Domain.RepositoryInterfaces
         Task AddAsync(Department department);
         Task UpdateAsync(Department department);
         Task DeleteAsync(int id);
+        Task DeleteAsync(Department dep);
     }
 }

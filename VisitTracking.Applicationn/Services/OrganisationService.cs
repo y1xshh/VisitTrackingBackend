@@ -3,103 +3,91 @@ using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 
-namespace VisitTracking.Application.Services
+namespace VisitTracking.Application.Services;
+
+public class OrganisationService : IOrganisationService
 {
-    public class OrganisationService : IOrganisationService
+    private readonly IOrganisationRepository _repository;
+
+    public OrganisationService(IOrganisationRepository repository)
     {
-        private readonly IOrganisationRepository _repository;
+        _repository = repository;
+    }
 
-        public OrganisationService(IOrganisationRepository repository)
+    public async Task<List<OrganisationDto>> GetAllAsync()
+    {
+        var orgs = await _repository.GetAllAsync();
+
+        return orgs.Select(x => new OrganisationDto
         {
-            _repository = repository;
-        }
+            Id = x.Id,
+            OrganisationName = x.OrganisationName,
+            CompanyId = x.CompanyId ?? 0,
+            CompanyName = x.Company?.CompanyName,
+            Address = x.Address,
+            City = x.City,
+            State = x.State
+        }).ToList();
+    }
 
-        public async Task<List<Organisation>> GetAllAsync()
+    public async Task<OrganisationDto?> GetByIdAsync(int id)
+    {
+        var x = await _repository.GetByIdAsync(id);
+        if (x == null) return null;
+
+        return new OrganisationDto
         {
-            return await _repository.GetAllAsync();
-        }
+            Id = x.Id,
+            OrganisationName = x.OrganisationName,
+            CompanyId = x.CompanyId ?? 0,
+            CompanyName = x.Company?.CompanyName,
+            Address = x.Address,
+            City = x.City,
+            State = x.State
+        };
+    }
 
-        public async Task<Organisation?> GetByIdAsync(int id)
+    public async Task AddAsync(OrganisationDto dto)
+    {
+        var entity = new Organisation
         {
-            return await _repository.GetByIdAsync(id);
-        }
+            OrganisationName = dto.OrganisationName,
+            CompanyId = dto.CompanyId,
+            Address = dto.Address,
+            City = dto.City,
+            State = dto.State,
+            IsActive = true,
+            InsertedBy = "System",
+            InsertedDate = DateTime.UtcNow
+        };
 
-        // ✅ FIXED DTO METHOD
-        public async Task<OrganisationDto?> GetDtoByIdAsync(int id)
-        {
-            var entity = await _repository.GetByIdAsync(id);
+        await _repository.AddAsync(entity);
+    }
 
-            if (entity == null)
-                return null;
+    public async Task UpdateAsync(int id, OrganisationDto dto)
+    {
+        var entity = await _repository.GetByIdAsync(id);
+        if (entity == null) return;
 
-            return new OrganisationDto
-            {
-                Id = entity.Id,
-                OrganisationName = entity.OrganisationName,
+        entity.OrganisationName = dto.OrganisationName;
+        entity.CompanyId = dto.CompanyId;
+        entity.Address = dto.Address;
+        entity.City = dto.City;
+        entity.State = dto.State;
+        entity.UpdatedBy = "System";
+        entity.UpdatedDate = DateTime.UtcNow;
 
-                CompanyId = (int)entity.CompanyId,   // ✅ no casting
+        await _repository.UpdateAsync(entity);
+    }
 
-                Address = entity.Address,
-                City = entity.City,
-                State = entity.State,
+    public async Task DeleteAsync(int id)
+    {
+        var entity = await _repository.GetByIdAsync(id);
+        if (entity == null) return;
 
-                // ✅ navigation safe
-                CompanyName = entity.Company != null
-                                ? entity.Company.CompanyName
-                                : null,
+        entity.IsActive = false; // ✅ soft delete
+        entity.UpdatedDate = DateTime.UtcNow;
 
-                UpdatedBy = entity.UpdatedBy,
-
-                // ✅ null safe
-                UpdatedDate = entity.UpdatedDate ?? DateTime.UtcNow
-            };
-        }
-
-        // ✅ ADD
-        public async Task AddAsync(OrganisationDto dto)
-        {
-            var organisation = new Organisation
-            {
-                OrganisationName = dto.OrganisationName,
-                CompanyId = dto.CompanyId,
-                Address = dto.Address,
-                City = dto.City,
-                State = dto.State,
-
-                InsertedBy = dto.InsertedBy ?? "System",   // ✅ FIX
-                InsertedDate = DateTime.UtcNow,
-
-                UpdatedBy = dto.UpdatedBy,
-                UpdatedDate = dto.UpdatedDate
-            };
-
-            await _repository.AddAsync(organisation);
-        }
-
-        // ✅ UPDATE
-        public async Task UpdateAsync(int id, OrganisationDto dto)
-        {
-            var org = await _repository.GetByIdAsync(id);
-
-            if (org == null)
-                return;
-
-            org.OrganisationName = dto.OrganisationName;
-            org.CompanyId = dto.CompanyId;
-
-            org.Address = dto.Address;
-            org.City = dto.City;
-            org.State = dto.State;
-
-            org.UpdatedBy = "System";
-            org.UpdatedDate = DateTime.UtcNow;
-
-            await _repository.UpdateAsync(org);
-        }
-
-        public async Task DeleteAsync(int id)
-        {
-            await _repository.DeleteAsync(id);
-        }
+        await _repository.UpdateAsync(entity);
     }
 }

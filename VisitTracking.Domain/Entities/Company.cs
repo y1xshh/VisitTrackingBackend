@@ -1,4 +1,5 @@
-﻿
+﻿using System;
+using System.Collections.Generic;
 
 namespace VisitTracking.Domain.Entities;
 
@@ -31,8 +32,6 @@ public partial class Company
     public DateTime? UpdatedDate { get; set; }
 
     public virtual ICollection<Contactperson> Contactpeople { get; set; } = new List<Contactperson>();
-
-    public ICollection<Organisation> Organisations { get; set; } = new List<Organisation>();
 
     public virtual ICollection<Visit> Visits { get; set; } = new List<Visit>();
 }
