@@ -1,11 +1,15 @@
-﻿using VisitTracking.Application.DTOs;
+﻿using VisitTracking.Application.DTOs.VisitTracking.Application.DTOs;
+using VisitTracking.Domain.Entities;
 
-public interface IContactpersonService
+namespace VisitTracking.Application.Interface
 {
-    Task<List<ContactpersonDto>> GetAllAsync();
-    Task<ContactpersonDto?> GetByIdAsync(int id);
-    Task<ContactpersonDto?> GetByEmailAsync(string email);
-    Task Create(ContactpersonDto dto);
-    Task UpdateAsync(int id, ContactpersonDto dto);
-    Task DeleteAsync(int id);
+    public interface IContactpersonService
+    {
+        Task<List<ContactpersonDto>> GetAllAsync();
+        Task<ContactpersonDto?> GetByIdAsync(int id);
+        Task Create(ContactpersonDto dto);
+        Task UpdateAsync(int id, ContactpersonDto dto);
+        Task DeleteAsync(int id);
+        Task<ContactpersonDto?> GetByEmailAsync(string email);
+    }
 }

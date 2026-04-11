@@ -1,109 +1,154 @@
 ﻿using VisitTracking.Application.DTOs;
+using VisitTracking.Application.DTOs.VisitTracking.Application.DTOs;
+using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 
-public class ContactpersonService : IContactpersonService
+namespace VisitTracking.Application.Services
 {
-    private readonly IContactpersonRepository _repository;
-
-    public ContactpersonService(IContactpersonRepository repository)
+    public class ContactpersonService : IContactpersonService
     {
-        _repository = repository;
-    }
+        private readonly IContactpersonRepository _repository;
 
-    // ✅ GET ALL
-    public async Task<List<ContactpersonDto>> GetAllAsync()
-    {
-        var data = await _repository.GetAllAsync();
-
-        return [.. data.Select(x => new ContactpersonDto
+        public ContactpersonService(IContactpersonRepository repository)
         {
-            Id = x.Id,
-            Name = x.Name,
-            Designation = x.Designation,
-            Mobile = x.Mobile,
-            Email = x.Email,
-            IsActive = x.IsActive ?? false,
+            _repository = repository;
+        }
 
-            CompanyName = x.Company?.CompanyName,
-            DepartmentName = x.Department?.DepartmentName,
-            OrganisationName = x.Organisation?.OrganisationName
-        })];
-    }
-    // ✅ GET BY ID
-    public async Task<ContactpersonDto?> GetByIdAsync(int id)
-    {
-        var x = await _repository.GetByIdAsync(id);
-        if (x == null) return null;
-
-        return new ContactpersonDto
+        // ✅ GET ALL
+        public async Task<List<ContactpersonDto>> GetAllAsync()
         {
-            Id = x.Id,
-            Name = x.Name,
-            Designation = x.Designation,
-            Mobile = x.Mobile,
-            Email = x.Email,
-            IsActive = x.IsActive ?? false,
+            var data = await _repository.GetAllAsync();
 
-            CompanyName = x.Company?.CompanyName,
-            DepartmentName = x.Department?.DepartmentName,
-            OrganisationName = x.Organisation?.OrganisationName
-        };
-    }
-    // ✅ CREATE
-    public async Task Create(ContactpersonDto dto)
-    {
-        var entity = new Contactperson
+            return data.Select(x => new ContactpersonDto
+            {
+                Id = x.Id,
+                CompanyId = x.CompanyId,
+                OrganisationId = x.OrganisationId,
+                DepartmentId = x.DepartmentId,
+
+                Name = x.Name,
+                Designation = x.Designation,
+                Mobile = x.Mobile,
+                Email = x.Email,
+                Remark = x.Remarks,
+                IsActive = x.IsActive ?? false,
+
+                CompanyName = x.Company?.CompanyName,
+                DepartmentName = x.Department?.DepartmentName,
+                OrganisationName = x.Organisation?.OrganisationName
+            }).ToList();
+        }
+
+        // ✅ GET BY ID
+        public async Task<ContactpersonDto?> GetByIdAsync(int id)
         {
-            CompanyId = dto.CompanyId,
-            OrganisationId = dto.OrganisationId,
-            DepartmentId = dto.DepartmentId,
+            var x = await _repository.GetByIdAsync(id);
 
-            Designation = dto.Designation,
+            if (x == null)
+                return null;
 
-            Name = dto.Name,
-            Mobile = dto.Mobile,
-            Email = dto.Email,
-            Remarks = dto.Remark,
-            IsActive = dto.IsActive,
-            InsertedDate = DateTime.Now
-        };
+            return new ContactpersonDto
+            {
+                Id = x.Id,
+                CompanyId = x.CompanyId,
+                OrganisationId = x.OrganisationId,
+                DepartmentId = x.DepartmentId,
 
-        await _repository.AddAsync(entity);
-    }
+                Name = x.Name,
+                Designation = x.Designation,
+                Mobile = x.Mobile,
+                Email = x.Email,
+                Remark = x.Remarks,
+                IsActive = x.IsActive ?? false,
 
-    // ✅ UPDATE
-  public async Task UpdateAsync(int id, ContactpersonDto dto)
-{
-    var data = await _repository.GetByIdAsync(id);
-    if (data == null) return;
+                CompanyName = x.Company?.CompanyName,
+                DepartmentName = x.Department?.DepartmentName,
+                OrganisationName = x.Organisation?.OrganisationName
+            };
+        }
 
-    data.CompanyId = dto.CompanyId;
-    data.OrganisationId = dto.OrganisationId;
-    data.DepartmentId = dto.DepartmentId;
+        // ✅ CREATE
+        public async Task Create(ContactpersonDto dto)
+        {
+            var entity = new Contactperson
+            {
+                CompanyId = dto.CompanyId,
+                OrganisationId = dto.OrganisationId,
+                DepartmentId = dto.DepartmentId,
 
-    data.Designation = dto.Designation;
-    data.Name = dto.Name;
-    data.Mobile = dto.Mobile;
-    data.Email = dto.Email;
-    data.Remarks = dto.Remark;
-    data.IsActive = dto.IsActive;
-    data.UpdatedDate = DateTime.Now;
+                Name = dto.Name,
+                Designation = dto.Designation,
+                Mobile = dto.Mobile,
+                Email = dto.Email,
+                Remarks = dto.Remark,
+                IsActive = dto.IsActive,
 
-    await _repository.UpdateAsync(data);
-}
+                InsertedBy = "system", // 🔥 later replace with logged-in user
+                InsertedDate = DateTime.UtcNow
+            };
 
-    // ✅ DELETE
-    public async Task DeleteAsync(int id)
-    {
-        var entity = await _repository.GetByIdAsync(id);
-        if (entity == null) return;
+            await _repository.AddAsync(entity);
+        }
 
-        await _repository.DeleteAsync(entity);
-    }
+        // ✅ UPDATE
+        public async Task UpdateAsync(int id, ContactpersonDto dto)
+        {
+            var data = await _repository.GetByIdAsync(id);
 
-    public Task<ContactpersonDto?> GetByEmailAsync(string email)
-    {
-        throw new NotImplementedException();
+            if (data == null)
+                throw new Exception("Contact person not found");
+
+            data.CompanyId = dto.CompanyId;
+            data.OrganisationId = dto.OrganisationId;
+            data.DepartmentId = dto.DepartmentId;
+
+            data.Name = dto.Name;
+            data.Designation = dto.Designation;
+            data.Mobile = dto.Mobile;
+            data.Email = dto.Email;
+            data.Remarks = dto.Remark;
+            data.IsActive = dto.IsActive;
+
+            data.UpdatedBy = "system"; // 🔥 later replace with logged-in user
+            data.UpdatedDate = DateTime.UtcNow;
+
+            await _repository.UpdateAsync(data);
+        }
+
+        // ✅ DELETE (Soft Delete Recommended)
+        public async Task DeleteAsync(int id)
+        {
+            var entity = await _repository.GetByIdAsync(id);
+
+            if (entity == null)
+                throw new Exception("Contact person not found");
+
+            // 🔥 Soft delete
+            entity.IsActive = false;
+            entity.UpdatedDate = DateTime.UtcNow;
+
+            await _repository.UpdateAsync(entity);
+        }
+
+        // ✅ GET BY EMAIL
+        public async Task<ContactpersonDto?> GetByEmailAsync(string email)
+        {
+            var data = await _repository.GetAllAsync();
+
+            var x = data.FirstOrDefault(x => x.Email == email);
+
+            if (x == null)
+                return null;
+
+            return new ContactpersonDto
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Email = x.Email,
+                Mobile = x.Mobile,
+                Designation = x.Designation
+            };
+        }
     }
 }

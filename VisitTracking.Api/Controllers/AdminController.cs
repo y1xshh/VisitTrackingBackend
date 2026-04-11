@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization; 
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 
@@ -6,6 +7,8 @@ namespace VisitTracking.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+
+    [Authorize] 
     public class AdminController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -17,7 +20,7 @@ namespace VisitTracking.Api.Controllers
             _UserListService = userListService;
         }
 
-        // ✅ CREATE USER (ADMIN)
+        
         [HttpPost("create-user-by-admin")]
         public async Task<IActionResult> CreateUserByAdmin([FromBody] CreateUserByAdminDto dto)
         {
@@ -33,7 +36,7 @@ namespace VisitTracking.Api.Controllers
             });
         }
 
-        // ✅ CREATE EMPLOYEE
+        
         [HttpPost("create-employee")]
         public async Task<IActionResult> CreateEmployee([FromBody] EmployeeUserDto dto)
         {
@@ -61,45 +64,44 @@ namespace VisitTracking.Api.Controllers
             }
         }
 
-        // ✅ GET ALL USERS (UserListDto)
-            [HttpGet("users")]
-            public async Task<IActionResult> GetAll()
-            {
-                return Ok(await _UserListService.GetAllUsersAsync());
-            }
+       
+        [HttpGet("users")]
+        public async Task<IActionResult> GetAll()
+        {
+            return Ok(await _UserListService.GetAllUsersAsync());
+        }
 
-            [HttpGet("user/{id}")]
-            public async Task<IActionResult> GetById(int id)
-            {
-                var user = await _UserListService.GetUserByIdAsync(id);
+        [HttpGet("user/{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var user = await _UserListService.GetUserByIdAsync(id);
 
-                if (user == null)
-                    return NotFound("User not found");
+            if (user == null)
+                return NotFound("User not found");
 
-                return Ok(user);
-            }
+            return Ok(user);
+        }
 
-            [HttpPut("user/{id}")]
-            public async Task<IActionResult> Update(int id, UserListDto dto)
-            {
-                var result = await _UserListService.UpdateUserAsync(id, dto);
+        [HttpPut("user/{id}")]
+        public async Task<IActionResult> Update(int id, UserListDto dto)
+        {
+            var result = await _UserListService.UpdateUserAsync(id, dto);
 
-                if (!result)
-                    return NotFound("User not found");
+            if (!result)
+                return NotFound("User not found");
 
-                return Ok("Updated successfully");
-            }
+            return Ok("Updated successfully");
+        }
 
-            [HttpDelete("user/{id}")]
-            public async Task<IActionResult> Delete(int id)
-            {
-                var result = await _UserListService.DeleteUserAsync(id);
+        [HttpDelete("user/{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var result = await _UserListService.DeleteUserAsync(id);
 
-                if (!result)
-                    return NotFound("User not found");
+            if (!result)
+                return NotFound("User not found");
 
-                return Ok("Deleted successfully");
-            }
+            return Ok("Deleted successfully");
         }
     }
-    
+}

@@ -19,7 +19,6 @@ public class ContactpersonRepository : IContactpersonRepository
             .Include(x => x.Company)
             .Include(x => x.Department)
             .Include(x => x.Organisation)
-            .Include(x => x.Designation) // 🔥 important
             .ToListAsync();
     }
 
@@ -30,20 +29,33 @@ public class ContactpersonRepository : IContactpersonRepository
             .Include(x => x.Company)
             .Include(x => x.Department)
             .Include(x => x.Organisation)
-            .Include(x => x.Designation) // 🔥 important
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 
     public async Task AddAsync(Contactperson entity)
     {
-        await _context.Contactpersons.AddAsync(entity);
+       var entry = await _context.Contactpersons.AddAsync(entity);
         await _context.SaveChangesAsync();
     }
 
     public async Task UpdateAsync(Contactperson entity)
     {
-        _context.Contactpersons.Update(entity);
-        await _context.SaveChangesAsync();
+        var existingEntity = await _context.Contactpersons.FindAsync(entity.Id);
+        if (existingEntity != null)
+        {
+            existingEntity.CompanyId = entity.CompanyId;
+            existingEntity.OrganisationId = entity.OrganisationId;
+            existingEntity.DepartmentId = entity.DepartmentId;
+            existingEntity.Name = entity.Name;
+            existingEntity.Designation = entity.Designation;
+            existingEntity.Mobile = entity.Mobile;
+            existingEntity.Email = entity.Email;
+            existingEntity.Remarks = entity.Remarks;
+            existingEntity.IsActive = entity.IsActive;
+            _context.Contactpersons.Update(existingEntity);
+            await _context.SaveChangesAsync();
+        }
+
     }
 
     public async Task DeleteAsync(int id)
@@ -58,11 +70,20 @@ public class ContactpersonRepository : IContactpersonRepository
 
     public Task GetByEmailAsync(string email)
     {
-        throw new NotImplementedException();
+        var data = _context.Contactpersons.FirstOrDefault(x => x.Email == email);
+        return Task.FromResult(data);
+
     }
 
     public Task DeleteAsync(Contactperson entity)
     {
-        throw new NotImplementedException();
+        var data = _context.Contactpersons.Find(entity.Id);
+        if (data != null)
+        {
+            _context.Contactpersons.Remove(data);
+            return _context.SaveChangesAsync();
+        }
+        return Task.CompletedTask;
+
     }
 }

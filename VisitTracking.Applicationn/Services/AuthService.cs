@@ -53,7 +53,7 @@ namespace VisitTracking.Application.Services
         }
 
         // ================= LOGIN =================
-        // ================= LOGIN =================
+      
         public async Task<LoginResponseDto> Login(LoginDto dto)
         {
             var user = await _repo.GetByEmailAsync(dto.Email);
@@ -103,7 +103,7 @@ namespace VisitTracking.Application.Services
             {
                 Token = GenerateJwt(user, role),
                 Role = role,
-                IsFirstLogin = false,
+                IsFirstLogin = (bool)user.IsFirstLogin,
                 Message = "Login successful"
 
 
@@ -355,11 +355,13 @@ namespace VisitTracking.Application.Services
 
         }
 
-        public Task<User> GetByEmailAsync(string email)
+        public async Task<User> GetByEmailAsync(string email)
         {
-            var user = _repo.GetByEmailAsync(email);
+            var user = await _repo.GetByEmailAsync(email);
+
             if (user == null)
                 throw new Exception("User not found");
+
             return user;
         }
 
@@ -371,14 +373,18 @@ namespace VisitTracking.Application.Services
             return user;
         }
 
-        public Task UpdateAsync(User user)
+        public async Task UpdateAsync(User user)
         {
-            var existingUser = _repo.GetByIdAsync(user.Id);
+            var existingUser = await _repo.GetByIdAsync(user.Id);
+
             if (existingUser == null)
                 throw new Exception("User not found");
-            return existingUser;
-            
 
+            existingUser.FullName = user.FullName;
+            existingUser.Email = user.Email;
+            existingUser.Mobile = user.Mobile;
+
+            await _repo.UpdateAsync(existingUser);
         }
     }
 }
