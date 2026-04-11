@@ -1,0 +1,20 @@
+﻿using VisitTracking.Application.DTOs;
+using VisitTracking.Domain.Entities;
+
+namespace VisitTracking.Application.Interface
+{
+    public interface IAuthService
+    {
+        Task<String> Register(RegisterDTo dTo);
+        Task<LoginResponseDto> Login(LoginDto dto);
+        Task<string> ChangePassword(ChangePasswordDto dto);
+        Task<string>ApproveUser(ApproveUserDto dto);
+        Task<string>CreateUserByAdmin(CreateUserByAdminDto dto);
+        Task CreateEmployee(EmployeeUserDto dto);
+        Task User(UserDto dto);
+        Task UpdateAsync(object user);
+        Task<User> GetByEmailAsync(string email);
+        Task<User> GetUserByIdAsync(int userId);
+        Task UpdateAsync(User user);
+    }
+}
