@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\VisitTracking.Application\VisitTracking.Application.csproj" />
     <ProjectReference Include="..\VisitTracking.Applicationn\VisitTracking.Application.csproj" />
     <ProjectReference Include="..\VisitTracking.Infrastructure\VisitTracking.Infrastructure.csproj" />
   </ItemGroup>

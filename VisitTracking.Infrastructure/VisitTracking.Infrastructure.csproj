@@ -8,8 +8,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\VisitTracking.Domain\VisitTracking.Domain.csproj" />
-		<ProjectReference Include="..\..\VisitTracking.Application\VisitTracking.Application.csproj" />
-		
 	</ItemGroup>
 
 	<ItemGroup>
