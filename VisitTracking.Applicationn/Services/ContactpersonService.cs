@@ -4,6 +4,8 @@ using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 
+namespace VisitTracking.Application.Services;
+
 public class ContactpersonService : IContactpersonService
 {
     private readonly IContactpersonRepository _repository;
@@ -15,12 +17,11 @@ public class ContactpersonService : IContactpersonService
         _auditService = auditLogService;
     }
 
-    // ✅ GET ALL
     public async Task<List<ContactpersonDto>> GetAllAsync()
     {
         var data = await _repository.GetAllAsync();
 
-        return [.. data.Select(x => new ContactpersonDto
+        return data.Select(x => new ContactpersonDto
         {
             Id = x.Id,
             Name = x.Name,
@@ -32,13 +33,12 @@ public class ContactpersonService : IContactpersonService
             DepartmentId = x.DepartmentId,
             Remark = x.Remarks,
             IsActive = x.IsActive ?? false,
-
             CompanyName = x.Company?.CompanyName,
             DepartmentName = x.Department?.DepartmentName,
             OrganisationName = x.Organisation?.OrganisationName
-        })];
+        }).ToList();
     }
-    // ✅ GET BY ID
+
     public async Task<ContactpersonDto?> GetByIdAsync(int id)
     {
         var x = await _repository.GetByIdAsync(id);
@@ -53,13 +53,15 @@ public class ContactpersonService : IContactpersonService
             Email = x.Email,
             Remark = x.Remarks,
             IsActive = x.IsActive ?? false,
-
+            CompanyId = x.CompanyId,
+            OrganisationId = x.OrganisationId,
+            DepartmentId = x.DepartmentId,
             CompanyName = x.Company?.CompanyName,
             DepartmentName = x.Department?.DepartmentName,
             OrganisationName = x.Organisation?.OrganisationName
         };
     }
-    // ✅ CREATE
+
     public async Task Create(ContactpersonDto dto)
     {
         var entity = new Contactperson
@@ -67,9 +69,7 @@ public class ContactpersonService : IContactpersonService
             CompanyId = dto.CompanyId,
             OrganisationId = dto.OrganisationId,
             DepartmentId = dto.DepartmentId,
-
             Designation = dto.Designation,
-
             Name = dto.Name,
             Mobile = dto.Mobile,
             Email = dto.Email,
@@ -94,7 +94,6 @@ public class ContactpersonService : IContactpersonService
         });
     }
 
-    // ✅ UPDATE
     public async Task UpdateAsync(int id, ContactpersonDto dto)
     {
         var data = await _repository.GetByIdAsync(id);
@@ -108,7 +107,6 @@ public class ContactpersonService : IContactpersonService
         data.CompanyId = dto.CompanyId;
         data.OrganisationId = dto.OrganisationId;
         data.DepartmentId = dto.DepartmentId;
-
         data.Designation = dto.Designation;
         data.Name = dto.Name;
         data.Mobile = dto.Mobile;
@@ -133,7 +131,6 @@ public class ContactpersonService : IContactpersonService
         });
     }
 
-    // ✅ DELETE
     public async Task DeleteAsync(int id)
     {
         var entity = await _repository.GetByIdAsync(id);

@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization; 
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 
 [ApiController]
 [Route("api/[controller]")]
+
 public class EmployeeController : ControllerBase
 {
     private readonly IEmployeeService _service;
@@ -13,7 +15,6 @@ public class EmployeeController : ControllerBase
         _service = service;
     }
 
-    
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -21,7 +22,6 @@ public class EmployeeController : ControllerBase
         return Ok(data);
     }
 
-    
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -30,7 +30,6 @@ public class EmployeeController : ControllerBase
         return Ok(data);
     }
 
-    
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, EmployeeDto dto)
     {
@@ -38,7 +37,6 @@ public class EmployeeController : ControllerBase
         return Ok("Employee updated successfully");
     }
 
-    
     [HttpGet("reporting-manager-dropdown")]
     public async Task<IActionResult> GetReportingManagerDropdown()
     {

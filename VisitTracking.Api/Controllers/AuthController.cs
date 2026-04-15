@@ -13,6 +13,7 @@ public class AuthController(IAuthService service) : ControllerBase
     private readonly IAuthService _service = service;
 
     [HttpPost("register")]
+    [AllowAnonymous]
     public async Task<IActionResult> Register(RegisterDTo dTo)
     {
         var result = await _service.Register(dTo);
@@ -20,6 +21,7 @@ public class AuthController(IAuthService service) : ControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login(LoginDto dto)
     {
         var result = await _service.Login(dto);

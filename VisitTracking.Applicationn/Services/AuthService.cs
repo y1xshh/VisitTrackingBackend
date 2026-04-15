@@ -36,7 +36,6 @@ namespace VisitTracking.Application.Services
             _auditService = auditLogService;
         }
 
-        // ================= REGISTER =================
         public async Task<string> Register(RegisterDTo dto)
         {
             var existing = await _repo.GetByEmailAsync(dto.Email);
@@ -56,7 +55,6 @@ namespace VisitTracking.Application.Services
             return "Registered successfully. Waiting for admin approval.";
         }
 
-        // ================= LOGIN =================
         public async Task<LoginResponseDto> Login(LoginDto dto)
         {
             var user = await _repo.GetByEmailAsync(dto.Email);
@@ -72,8 +70,7 @@ namespace VisitTracking.Application.Services
                 };
             }
 
-            // ✅ 🔥 Active Check (IMPORTANT)
-            if ((bool)!user.IsActive)
+            if (user.IsActive != true)
             {
                 return new LoginResponseDto
                 {
@@ -84,7 +81,6 @@ namespace VisitTracking.Application.Services
                 };
             }
 
-            // Password check
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             {
                 return new LoginResponseDto
@@ -103,38 +99,34 @@ namespace VisitTracking.Application.Services
 
             return new LoginResponseDto
             {
-                Token = GenerateJwt(user, role),
+                Token = GenerateJwt(user, role ?? string.Empty),
                 Role = role,
                 IsFirstLogin = user.IsFirstLogin ?? false,
                 Message = "Login successful"
             };
         }
 
-
-        // ================= JWT =================
         private string GenerateJwt(User user, string role)
         {
             var claims = new[]
             {
                 new Claim("id", user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.FullName ?? ""),
-                new Claim(ClaimTypes.Email, user.Email ?? ""),
-                new Claim(ClaimTypes.Role, role ?? ""),
-
-                // ✅ FIX: NULL SAFE
-                new Claim("designationId", user.DesignationId?.ToString() ?? ""),
-                new Claim("departmentId", user.DepartmentId.ToString() ?? "")
+                new Claim(ClaimTypes.Name, user.FullName ?? string.Empty),
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+                new Claim(ClaimTypes.Role, role ?? string.Empty),
+                new Claim("designationId", user.DesignationId?.ToString() ?? string.Empty),
+                new Claim("departmentId", user.DepartmentId.ToString() ?? string.Empty)
             };
 
             var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_config["Jwt:Key"])
+                Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
             );
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],   
-              audience: _config["Jwt:Audience"], 
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
                 claims: claims,
                 expires: DateTime.Now.AddHours(2),
                 signingCredentials: creds
@@ -143,7 +135,6 @@ namespace VisitTracking.Application.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        // ================= CREATE USER BY ADMIN =================
         public async Task<string> CreateUserByAdmin(CreateUserByAdminDto dto)
         {
             var roleExists = await _context.Set<Role>().AnyAsync(x => x.Id == dto.RoleId);
@@ -159,13 +150,10 @@ namespace VisitTracking.Application.Services
                 FullName = dto.FullName,
                 Email = dto.Email,
                 Mobile = dto.Mobile,
-
                 RoleId = dto.RoleId,
                 DepartmentId = dto.DepartmentId,
                 DesignationId = dto.DesignationId,
-
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(randomPassword),
-
                 IsFirstLogin = true,
                 IsActive = true,
                 InsertedBy = "admin",
@@ -185,19 +173,14 @@ namespace VisitTracking.Application.Services
             return "User created successfully";
         }
 
-        // ================= CREATE EMPLOYEE =================
         public async Task CreateEmployee(EmployeeUserDto dto)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
-                // ✅ VALIDATION (Role & Department)
-                var roleExists = await _context.Set<Role>()
-                    .AnyAsync(x => x.Id == dto.RoleId);
-
-                var deptExists = await _context.Set<Department>()
-                    .AnyAsync(x => x.Id == dto.DepartmentId);
+                var roleExists = await _context.Set<Role>().AnyAsync(x => x.Id == dto.RoleId);
+                var deptExists = await _context.Set<Department>().AnyAsync(x => x.Id == dto.DepartmentId);
 
                 if (!roleExists)
                     throw new Exception("Invalid RoleId");
@@ -205,16 +188,13 @@ namespace VisitTracking.Application.Services
                 if (!deptExists)
                     throw new Exception("Invalid DepartmentId");
 
-                // ✅ GENERATE PASSWORD
                 var randomPassword = GeneratePassword();
 
-                // ✅ CREATE USER
                 var user = new User
                 {
                     FullName = dto.FullName,
                     Email = dto.Email,
                     Mobile = dto.Mobile,
-
                     RoleId = dto.RoleId,
                     DepartmentId = dto.DepartmentId,
                     DesignationId = dto.DesignationId,
@@ -241,9 +221,6 @@ namespace VisitTracking.Application.Services
                     ActionBy = 1
                 });
 
-                //Console.WriteLine($"Incoming ReportingManagerId: {dto.ReportingManagerId}");
-
-                // ✅ VALIDATE REPORTING MANAGER (FROM EMPLOYEE TABLE)
                 if (dto.ReportingManagerId.HasValue)
                 {
                     var managerExists = await _context.Set<Employee>()
@@ -255,27 +232,18 @@ namespace VisitTracking.Application.Services
                     }
                 }
 
-
-                // ✅ CREATE EMPLOYEE
                 var employee = new Employee
                 {
                     UserId = user.Id,
-                    EmployeeCode = string.IsNullOrEmpty(dto.EmployeeCode)
-                        ? $"EMP{user.Id}"
-                        : dto.EmployeeCode,
-
+                    EmployeeCode = string.IsNullOrEmpty(dto.EmployeeCode) ? $"EMP{user.Id}" : dto.EmployeeCode,
                     DesignationId = dto.DesignationId > 0 ? dto.DesignationId : null,
-
-                    ReportingManagerId = dto.ReportingManagerId, // FK to Employee.Id
-                    LocationId = dto.LocationId,
-
-
+                    ReportingManagerId = dto.ReportingManagerId,
+                    LocationId = dto.LocationId
                 };
 
                 await _context.Set<Employee>().AddAsync(employee);
                 await _context.SaveChangesAsync();
 
-                // ✅ OPTIONAL: SELF MANAGER CHECK (EXTRA SAFETY)
                 if (employee.ReportingManagerId == employee.Id)
                 {
                     throw new Exception("Employee cannot be their own manager");
@@ -294,12 +262,7 @@ namespace VisitTracking.Application.Services
                     ActionBy = 1
                 });
 
-                // ✅ SEND EMAIL
-                var body = EmpRegEmailTemplate.Build(
-                    user.FullName,
-                    user.Email,
-                    randomPassword
-                );
+                var body = EmpRegEmailTemplate.Build(user.FullName, user.Email, randomPassword);
 
                 await _emailService.SendEmailAsync(
                     user.Email,
@@ -307,7 +270,6 @@ namespace VisitTracking.Application.Services
                     body
                 );
 
-                // ✅ COMMIT
                 await transaction.CommitAsync();
             }
             catch (Exception ex)
@@ -317,11 +279,9 @@ namespace VisitTracking.Application.Services
             }
         }
 
-        // ================= CHANGE PASSWORD =================
         public async Task<string> ChangePassword(ChangePasswordDto dto)
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == dto.Email);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
             if (user == null)
                 return "User not found";
@@ -332,14 +292,12 @@ namespace VisitTracking.Application.Services
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
             user.IsFirstLogin = false;
 
-            // ✅ Update DB
             _context.Users.Update(user);
-            await _context.SaveChangesAsync(); // 🔑 This is mandatory
+            await _context.SaveChangesAsync();
 
             return "Password changed successfully";
         }
 
-        // ================= APPROVE USER =================
         public async Task<string> ApproveUser(ApproveUserDto dto)
         {
             var user = await _repo.GetByIdAsync(dto.UserId);
@@ -354,7 +312,6 @@ namespace VisitTracking.Application.Services
             return "User approved successfully";
         }
 
-        // ================= PASSWORD GENERATOR =================
         private static string GeneratePassword()
         {
             return "Emp@" + new Random().Next(1000, 9999);
@@ -366,9 +323,9 @@ namespace VisitTracking.Application.Services
             {
                 FullName = dto.FullName,
                 Email = dto.Email,
-                Mobile = dto.Mobile,
-                //PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.HashPassword)
+                Mobile = dto.Mobile
             };
+
             return _repo.AddAsync(user);
         }
 
@@ -383,8 +340,9 @@ namespace VisitTracking.Application.Services
             existingUser.PasswordHash = user.PasswordHash;
             existingUser.IsFirstLogin = user.IsFirstLogin;
 
-            await _repo.UpdateAsync(existingUser); // ✅ actual update
+            await _repo.UpdateAsync(existingUser);
         }
+
         public async Task<User> GetByEmailAsync(string email)
         {
             var user = await _repo.GetByEmailAsync(email);
@@ -394,6 +352,7 @@ namespace VisitTracking.Application.Services
 
             return user;
         }
+
         public async Task<User> GetUserByIdAsync(int userId)
         {
             var user = await _repo.GetByIdAsync(userId);

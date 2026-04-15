@@ -7,23 +7,17 @@ public class EmployeeRepository(AppDbContext context) : IEmployeeRepository
 {
     private readonly AppDbContext _context = context;
 
-    public async Task<List<Employee>> GetAllAsync()
-    {
-        return await _context.Employees
+    public async Task<List<Employee>> GetAllAsync() => await _context.Employees
             .Include(x => x.Designation)
             .Include(x => x.Location)
             .Include(x => x.User)
             .OrderByDescending(x => x.Id)
             .ToListAsync();
-    }
 
-    public async Task<Employee?> GetByIdAsync(int id)
-    {
-        return await _context.Employees
+    public async Task<Employee?> GetByIdAsync(int id) => await _context.Employees
             .Include(x => x.Designation)
             .Include(x => x.Location)
             .FirstOrDefaultAsync(x => x.Id == id);
-    }
 
     public async Task UpdateAsync(Employee employee)
     {

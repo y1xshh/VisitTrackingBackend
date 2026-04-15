@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 using VisitTracking.Application.Filter;
 using VisitTracking.Application.Interface;
@@ -10,15 +11,17 @@ using VisitTracking.Domain.RepositoryInterfaces;
 using VisitTracking.Infrastructure.Data;
 using VisitTracking.Infrastructure.Repositories;
 
-
-
-
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>(options => options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
-    new MySqlServerVersion(new Version(8, 0, 36))
-    ));
+// DB
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        new MySqlServerVersion(new Version(8, 0, 36))
+    )
+);
 
+// Services & Repositories
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -38,10 +41,8 @@ builder.Services.AddScoped<IVisitRepository, VisitRepository>();
 builder.Services.AddScoped<IVisitService, VisitService>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRoleService, RoleService>();
-builder.Services.AddScoped<IVisitRepository, VisitRepository>();
 builder.Services.AddScoped<IVehicleTypeRepository, VehicleTypeRepository>();
-builder.Services.AddScoped<IVehicleTypeService, VehicleTypeService>(); // ✅ ADD THIS
-builder.Services.AddScoped<IVisitService, VisitService>();
+builder.Services.AddScoped<IVehicleTypeService, VehicleTypeService>();
 builder.Services.AddScoped<IExpenserateRepository, ExpenserateRepository>();
 builder.Services.AddScoped<IExpenserateService, ExpenserateService>();
 builder.Services.AddScoped<IFunnelStageRepository, FunnelStageRepository>();
@@ -63,10 +64,11 @@ builder.Services.AddScoped<IDesignationRepository, DesignationRepository>();
 builder.Services.AddScoped<IDesignationService, DesignationService>();
 builder.Services.AddScoped<ILocationRepository, LocationRepository>();
 builder.Services.AddScoped<ILocationService, LocationService>();
-
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
+
+// JWT Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -77,23 +79,18 @@ builder.Services.AddAuthentication("Bearer")
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
         };
 
-        // ✅ 🔥 MAIN LOGIC HERE
         options.Events = new JwtBearerEvents
         {
             OnTokenValidated = async context =>
             {
-                var db = context.HttpContext.RequestServices
-                    .GetRequiredService<AppDbContext>();
+                var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+                var userId = context.Principal?.FindFirst("id")?.Value;
 
-                var userId = context.Principal.FindFirst("id")?.Value;
+                var user = await db.Users.FirstOrDefaultAsync(x => x.Id.ToString() == userId);
 
-                var user = await db.Users
-                    .FirstOrDefaultAsync(x => x.Id.ToString() == userId);
-
-                // ❌ अगर inactive है → block
                 if (user == null || user.IsActive != true)
                 {
                     context.Fail("User is inactive");
@@ -102,46 +99,77 @@ builder.Services.AddAuthentication("Bearer")
         };
     });
 
-// Add services to the container.
+builder.Services.AddAuthorization();
 
+// Controllers
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddSwaggerGen();
+// Swagger with Authorize Button
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "VisitTracking API",
+        Version = "v1"
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter 'Bearer {your token}'"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocalhost", policy =>
     {
-        policy
-            .WithOrigins("http://localhost:5174", "https://localhost:5173")
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
+        policy.WithOrigins("http://localhost:5174", "https://localhost:5173")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
+
 var app = builder.Build();
 
-
-// Configure the HTTP request pipeline.
+// Middleware pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwaggerUI();
     app.UseSwagger();
+    app.UseSwaggerUI();
 }
-app.UseRouting();
 
-// CORS must be before Authentication/Authorization
+app.UseRouting();
 app.UseCors("AllowLocalhost");
 
-// HTTPS redirection - be careful in development with self-signed certs
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
 app.MapControllers();
