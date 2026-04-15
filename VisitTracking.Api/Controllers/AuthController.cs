@@ -28,11 +28,16 @@ public class AuthController(IAuthService service) : ControllerBase
             return Unauthorized(result);
 
         return Ok(result);
+
     }
+
+
+
+
 
     // ✅ FIXED CHANGE PASSWORD
     [HttpPost("change-password")]
-    [AllowAnonymous] // ✅ IMPORTANT
+
     public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
     {
         var user = await _service.GetByEmailAsync(dto.Email);

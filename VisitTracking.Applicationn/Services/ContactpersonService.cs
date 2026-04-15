@@ -1,14 +1,18 @@
-﻿using VisitTracking.Application.DTOs;
+using Newtonsoft.Json;
+using VisitTracking.Application.DTOs;
+using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 
 public class ContactpersonService : IContactpersonService
 {
     private readonly IContactpersonRepository _repository;
+    private readonly IAuditLogService _auditService;
 
-    public ContactpersonService(IContactpersonRepository repository)
+    public ContactpersonService(IContactpersonRepository repository, IAuditLogService auditLogService)
     {
         _repository = repository;
+        _auditService = auditLogService;
     }
 
     // ✅ GET ALL
@@ -23,6 +27,10 @@ public class ContactpersonService : IContactpersonService
             Designation = x.Designation,
             Mobile = x.Mobile,
             Email = x.Email,
+            CompanyId = x.CompanyId,
+            OrganisationId = x.OrganisationId,
+            DepartmentId = x.DepartmentId,
+            Remark = x.Remarks,
             IsActive = x.IsActive ?? false,
 
             CompanyName = x.Company?.CompanyName,
@@ -43,6 +51,7 @@ public class ContactpersonService : IContactpersonService
             Designation = x.Designation,
             Mobile = x.Mobile,
             Email = x.Email,
+            Remark = x.Remarks,
             IsActive = x.IsActive ?? false,
 
             CompanyName = x.Company?.CompanyName,
@@ -70,28 +79,59 @@ public class ContactpersonService : IContactpersonService
         };
 
         await _repository.AddAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Contactperson",
+            RecordId = entity.Id,
+            ActionType = "INSERT",
+            OldValueJson = null,
+            NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
     }
 
     // ✅ UPDATE
-  public async Task UpdateAsync(int id, ContactpersonDto dto)
-{
-    var data = await _repository.GetByIdAsync(id);
-    if (data == null) return;
+    public async Task UpdateAsync(int id, ContactpersonDto dto)
+    {
+        var data = await _repository.GetByIdAsync(id);
+        if (data == null) return;
 
-    data.CompanyId = dto.CompanyId;
-    data.OrganisationId = dto.OrganisationId;
-    data.DepartmentId = dto.DepartmentId;
+        var oldValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        });
 
-    data.Designation = dto.Designation;
-    data.Name = dto.Name;
-    data.Mobile = dto.Mobile;
-    data.Email = dto.Email;
-    data.Remarks = dto.Remark;
-    data.IsActive = dto.IsActive;
-    data.UpdatedDate = DateTime.Now;
+        data.CompanyId = dto.CompanyId;
+        data.OrganisationId = dto.OrganisationId;
+        data.DepartmentId = dto.DepartmentId;
 
-    await _repository.UpdateAsync(data);
-}
+        data.Designation = dto.Designation;
+        data.Name = dto.Name;
+        data.Mobile = dto.Mobile;
+        data.Email = dto.Email;
+        data.Remarks = dto.Remark;
+        data.IsActive = dto.IsActive;
+        data.UpdatedDate = DateTime.Now;
+
+        await _repository.UpdateAsync(data);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Contactperson",
+            RecordId = data.Id,
+            ActionType = "UPDATE",
+            OldValueJson = oldValueJson,
+            NewValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
+    }
 
     // ✅ DELETE
     public async Task DeleteAsync(int id)
@@ -99,7 +139,22 @@ public class ContactpersonService : IContactpersonService
         var entity = await _repository.GetByIdAsync(id);
         if (entity == null) return;
 
+        var oldValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        });
+
         await _repository.DeleteAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Contactperson",
+            RecordId = entity.Id,
+            ActionType = "DELETE",
+            OldValueJson = oldValueJson,
+            NewValueJson = null,
+            ActionBy = 1
+        });
     }
 
     public Task<ContactpersonDto?> GetByEmailAsync(string email)

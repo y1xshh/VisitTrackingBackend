@@ -1,15 +1,17 @@
-﻿using VisitTracking.Application.DTOs;
+using Newtonsoft.Json;
+using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.RepositoryInterfaces;
-
 
 public class EmployeeService : IEmployeeService
 {
     private readonly IEmployeeRepository _repository;
+    private readonly IAuditLogService _auditService;
 
-    public EmployeeService(IEmployeeRepository repository)
+    public EmployeeService(IEmployeeRepository repository, IAuditLogService auditLogService)
     {
         _repository = repository;
+        _auditService = auditLogService;
     }
 
     public async Task<List<EmployeeDto>> GetAllAsync()
@@ -59,6 +61,11 @@ public class EmployeeService : IEmployeeService
 
         if (emp == null) return;
 
+        var oldValueJson = JsonConvert.SerializeObject(emp, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        });
+
         emp.EmployeeCode = dto.EmployeeCode;
         emp.UserId = dto.UserId;
         emp.DesignationId = dto.DesignationId;
@@ -69,6 +76,19 @@ public class EmployeeService : IEmployeeService
         emp.UpdatedDate = DateTime.UtcNow;
 
         await _repository.UpdateAsync(emp);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Employees",
+            RecordId = emp.Id,
+            ActionType = "UPDATE",
+            OldValueJson = oldValueJson,
+            NewValueJson = JsonConvert.SerializeObject(emp, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
     }
 
 

@@ -13,38 +13,56 @@ public class DepartmentController : ControllerBase
         _service = service;
     }
 
+    
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        return Ok(await _service.GetAllAsync());
+        var data = await _service.GetAllAsync();
+        return Ok(data);
     }
 
+   
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(int id)
     {
         var data = await _service.GetByIdAsync(id);
-        if (data == null) return NotFound();
+
+        if (data == null)
+            return NotFound($"Department with ID {id} not found");
+
         return Ok(data);
     }
 
+   
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] DepartmentDto dto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         await _service.Create(dto);
-        return Ok("Department Created");
+
+        return Created("", "Department Created Successfully"); 
     }
 
+    
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] DepartmentDto dto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         await _service.UpdateAsync(id, dto);
-        return Ok("Department Updated");
+
+        return Ok("Department Updated Successfully");
     }
 
+    
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
         await _service.DeleteAsync(id);
-        return Ok("Department Deleted");
+
+        return Ok("Department Deleted Successfully");
     }
 }

@@ -100,6 +100,7 @@ namespace VisitTracking.Api.Controllers
 
                 return Ok("Deleted successfully");
             }
+            
         }
     }
     

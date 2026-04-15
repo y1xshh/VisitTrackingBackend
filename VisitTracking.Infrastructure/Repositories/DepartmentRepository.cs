@@ -15,29 +15,36 @@ public class DepartmentRepository : IDepartmentRepository
     public async Task<List<Department>> GetAllAsync()
     {
         return await _context.Departments
+            .Include(x => x.DesignationName) 
             .Where(x => x.IsActive == true)
             .ToListAsync();
     }
 
     public async Task<Department> GetByIdAsync(int id)
     {
-        var dep = await _context.Departments
-            .Include(x => x.Organisation) // ✅ MUST
+        return await _context.Departments
+            .Include(x => x.Organisation)
             .FirstOrDefaultAsync(x => x.Id == id);
-        return dep;
     }
+
     public async Task AddAsync(Department department)
     {
-        var org = await _context.Organisations.FindAsync(department.OrganisationId) ?? throw new Exception("Organisation not found");
+        var org = await _context.Organisations.FindAsync(department.OrganisationId)
+            ?? throw new Exception("Organisation not found");
+
+        await _context.Departments.AddAsync(department);
+        await _context.SaveChangesAsync();
     }
 
     public async Task UpdateAsync(Department department)
     {
-      var existingDep = await _context.Departments.FindAsync(department.Id) ?? throw new Exception("Department not found");
+        var existingDep = await _context.Departments.FindAsync(department.Id)
+            ?? throw new Exception("Department not found");
+
         existingDep.DepartmentName = department.DepartmentName;
         existingDep.OrganisationId = department.OrganisationId;
-        await _context.SaveChangesAsync();
 
+        await _context.SaveChangesAsync();
     }
 
     public async Task DeleteAsync(int id)
@@ -45,20 +52,8 @@ public class DepartmentRepository : IDepartmentRepository
         var dep = await _context.Departments.FindAsync(id);
         if (dep != null)
         {
-            _context.Departments.Remove(dep);
+            dep.IsActive = false; 
             await _context.SaveChangesAsync();
         }
-    }
-
-    public Task DeleteAsync(Department dep)
-    {
-       var existingDep = _context.Departments.Find(dep.Id);
-        if (existingDep != null)
-        {
-            _context.Departments.Remove(existingDep);
-            return _context.SaveChangesAsync();
-        }
-        return Task.CompletedTask;
-
     }
 }

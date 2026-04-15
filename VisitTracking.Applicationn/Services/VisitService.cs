@@ -1,4 +1,5 @@
-﻿using VisitTracking.Application.DTOs;
+using Newtonsoft.Json;
+using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
@@ -8,12 +9,14 @@ namespace VisitTracking.Application.Services
     public class VisitService : IVisitService
     {
         private readonly IVisitRepository _repository;
-        private readonly IVehicleTypeRepository _vehicleRepo; // <-- Add this line
+        private readonly IVehicleTypeRepository _vehicleRepo;
+        private readonly IAuditLogService _auditService;
 
-        public VisitService(IVisitRepository repository, IVehicleTypeRepository vehicleRepo) // <-- Update constructor
+        public VisitService(IVisitRepository repository, IVehicleTypeRepository vehicleRepo, IAuditLogService auditLogService)
         {
             _repository = repository;
-            _vehicleRepo = vehicleRepo; // <-- Assign injected dependency
+            _vehicleRepo = vehicleRepo;
+            _auditService = auditLogService;
         }
 
         public async Task<List<Visit>> GetAllAsync()
@@ -30,14 +33,12 @@ namespace VisitTracking.Application.Services
         {
             decimal? rate = dto.RateAppliedPerKm;
 
-            // 👉 Agar rate nahi diya to VehicleType se uthao
             if (rate == null || rate == 0)
             {
                 var vehicle = await _vehicleRepo.GetByIdAsync(dto.VehicleTypeId);
                 rate = vehicle?.DefaultRatePerKm;
             }
 
-            // 👉 Expense calculate
             decimal? expense = null;
 
             if (dto.DistanceKm != null && rate != null)
@@ -63,8 +64,8 @@ namespace VisitTracking.Application.Services
 
                 VehicleTypeId = dto.VehicleTypeId,
                 DistanceKm = dto.DistanceKm,
-                RateAppliedPerKm = rate,                  // ✅ auto filled
-                TravelExpenseAmount = expense,            // ✅ auto calculated
+                RateAppliedPerKm = rate,
+                TravelExpenseAmount = expense,
 
                 FunnelStageId = dto.FunnelStageId,
                 OutcomeTypeId = dto.OutcomeTypeId,
@@ -85,12 +86,24 @@ namespace VisitTracking.Application.Services
 
                 InsertedBy = dto.InsertedBy.ToString(),
                 InsertedDate = DateTime.UtcNow,
-                UpdatedBy = dto.UpdatedBy?.ToString(), // <-- Fix: convert int? to string
+                UpdatedBy = dto.UpdatedBy?.ToString(),
                 UpdatedDate = dto.UpdatedDate,
-               
             };
 
             await _repository.AddAsync(entity);
+
+            await _auditService.CreateAsync(new AuditLogDto
+            {
+                TableName = "Visit",
+                RecordId = entity.Id,
+                ActionType = "INSERT",
+                OldValueJson = null,
+                NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                }),
+                ActionBy = 1
+            });
         }
 
         public async Task UpdateAsync(int id, VisitDto dto)
@@ -98,15 +111,51 @@ namespace VisitTracking.Application.Services
             var data = await _repository.GetByIdAsync(id);
             if (data == null) return;
 
+            var oldValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            });
+
             data.Status = dto.Status;
-            data.UpdatedDate = DateTime.UtcNow; // Set the update timestamp
+            data.UpdatedDate = DateTime.UtcNow;
 
             await _repository.UpdateAsync(data);
+
+            await _auditService.CreateAsync(new AuditLogDto
+            {
+                TableName = "Visit",
+                RecordId = data.Id,
+                ActionType = "UPDATE",
+                OldValueJson = oldValueJson,
+                NewValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                }),
+                ActionBy = 1
+            });
         }
 
         public async Task DeleteAsync(int id)
         {
+            var data = await _repository.GetByIdAsync(id);
+            if (data == null) return;
+
+            var oldValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            });
+
             await _repository.DeleteAsync(id);
+
+            await _auditService.CreateAsync(new AuditLogDto
+            {
+                TableName = "Visit",
+                RecordId = id,
+                ActionType = "DELETE",
+                OldValueJson = oldValueJson,
+                NewValueJson = null,
+                ActionBy = 1
+            });
         }
     }
 }

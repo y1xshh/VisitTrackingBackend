@@ -1,4 +1,5 @@
-﻿using VisitTracking.Application.DTOs;
+using Newtonsoft.Json;
+using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
@@ -6,10 +7,12 @@ using VisitTracking.Domain.RepositoryInterfaces;
 public class VehicleTypeService : IVehicleTypeService
 {
     private readonly IVehicleTypeRepository _repository;
+    private readonly IAuditLogService _auditService;
 
-    public VehicleTypeService(IVehicleTypeRepository repository)
+    public VehicleTypeService(IVehicleTypeRepository repository, IAuditLogService auditLogService)
     {
         _repository = repository;
+        _auditService = auditLogService;
     }
 
     public async Task<List<VehicleTypeDto>> GetAllAsync()
@@ -48,6 +51,19 @@ public class VehicleTypeService : IVehicleTypeService
         };
 
         await _repository.AddAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "VehicleType",
+            RecordId = entity.Id,
+            ActionType = "INSERT",
+            OldValueJson = null,
+            NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
     }
 
     public async Task UpdateAsync(int id, VehicleTypeDto dto)
@@ -55,15 +71,51 @@ public class VehicleTypeService : IVehicleTypeService
         var entity = await _repository.GetByIdAsync(id);
         if (entity == null) return;
 
+        var oldValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        });
+
         entity.VehicleName = dto.VehicleName;
         entity.DefaultRatePerKm = dto.DefaultRatePerKm;
         entity.IsActive = dto.IsActive;
 
         await _repository.UpdateAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "VehicleType",
+            RecordId = entity.Id,
+            ActionType = "UPDATE",
+            OldValueJson = oldValueJson,
+            NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
     }
 
     public async Task DeleteAsync(int id)
     {
+        var oldEntity = await _repository.GetByIdAsync(id);
+
         await _repository.DeleteAsync(id);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "VehicleType",
+            RecordId = id,
+            ActionType = "DELETE",
+            OldValueJson = oldEntity == null ? JsonConvert.SerializeObject(new { Id = id }, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }) : JsonConvert.SerializeObject(oldEntity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            NewValueJson = null,
+            ActionBy = 1
+        });
     }
 }

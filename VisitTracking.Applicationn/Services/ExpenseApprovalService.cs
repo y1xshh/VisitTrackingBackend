@@ -1,14 +1,17 @@
-﻿using VisitTracking.Application.DTOs;
+using Newtonsoft.Json;
+using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 
 public class ExpenseApprovalService : IExpenseApprovalService
 {
     private readonly IExpenseApprovalRepository _repo;
+    private readonly IAuditLogService _auditService;
 
-    public ExpenseApprovalService(IExpenseApprovalRepository repo)
+    public ExpenseApprovalService(IExpenseApprovalRepository repo, IAuditLogService auditLogService)
     {
         _repo = repo;
+        _auditService = auditLogService;
     }
 
     public async Task<IEnumerable<ExpenseApprovalDto>> GetAllAsync()
@@ -54,17 +57,38 @@ public class ExpenseApprovalService : IExpenseApprovalService
         {
             VisitId = dto.VisitId,
             SubmittedBy = dto.SubmittedBy,
-            ApprovalStatus = "Pending",   // 🔥 default
+            ApprovalStatus = "Pending",
             SubmittedAt = DateTime.Now,
             IsActive = true,
             InsertedDate = DateTime.Now
         };
 
         await _repo.AddAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "ExpenseApproval",
+            RecordId = entity.Id,
+            ActionType = "INSERT",
+            OldValueJson = null,
+            NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
     }
 
     public async Task UpdateAsync(ExpenseApprovalDto dto)
     {
+        var existingEntity = await _repo.GetByIdAsync(dto.Id);
+        var oldValueJson = existingEntity != null
+            ? JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            })
+            : null;
+
         var entity = new Expenseapproval
         {
             Id = dto.Id,
@@ -80,18 +104,53 @@ public class ExpenseApprovalService : IExpenseApprovalService
         };
 
         await _repo.UpdateAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "ExpenseApproval",
+            RecordId = entity.Id,
+            ActionType = "UPDATE",
+            OldValueJson = oldValueJson,
+            NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
     }
 
     public async Task DeleteAsync(int id)
     {
+        var existingEntity = await _repo.GetByIdAsync(id);
+        var oldValueJson = existingEntity != null
+            ? JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            })
+            : null;
+
         await _repo.DeleteAsync(id);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "ExpenseApproval",
+            RecordId = id,
+            ActionType = "DELETE",
+            OldValueJson = oldValueJson,
+            NewValueJson = null,
+            ActionBy = 1
+        });
     }
 
-    // 🔥 APPROVE
     public async Task ApproveAsync(int id, int approvedBy, string? remarks)
     {
         var data = await _repo.GetByIdAsync(id);
         if (data == null) throw new Exception("Request not found");
+
+        var oldValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        });
 
         data.ApprovalStatus = "Approved";
         data.ApprovedBy = approvedBy;
@@ -99,13 +158,30 @@ public class ExpenseApprovalService : IExpenseApprovalService
         data.ApprovedAt = DateTime.Now;
 
         await _repo.UpdateAsync(data);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "ExpenseApproval",
+            RecordId = data.Id,
+            ActionType = "UPDATE",
+            OldValueJson = oldValueJson,
+            NewValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
     }
 
-    // 🔥 REJECT
     public async Task RejectAsync(int id, int approvedBy, string? remarks)
     {
         var data = await _repo.GetByIdAsync(id);
         if (data == null) throw new Exception("Request not found");
+
+        var oldValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        });
 
         data.ApprovalStatus = "Rejected";
         data.ApprovedBy = approvedBy;
@@ -113,5 +189,18 @@ public class ExpenseApprovalService : IExpenseApprovalService
         data.ApprovedAt = DateTime.Now;
 
         await _repo.UpdateAsync(data);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "ExpenseApproval",
+            RecordId = data.Id,
+            ActionType = "UPDATE",
+            OldValueJson = oldValueJson,
+            NewValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
     }
 }

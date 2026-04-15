@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -19,17 +20,20 @@ namespace VisitTracking.Application.Services
         private readonly IConfiguration _config;
         private readonly IEmailService _emailService;
         private readonly AppDbContext _context;
+        private readonly IAuditLogService _auditService;
 
         public AuthService(
             IUserRepository repo,
             IConfiguration config,
             IEmailService emailService,
-            AppDbContext context)
+            AppDbContext context,
+            IAuditLogService auditLogService)
         {
             _repo = repo;
             _config = config;
             _emailService = emailService;
             _context = context;
+            _auditService = auditLogService;
         }
 
         // ================= REGISTER =================
@@ -53,7 +57,6 @@ namespace VisitTracking.Application.Services
         }
 
         // ================= LOGIN =================
-        // ================= LOGIN =================
         public async Task<LoginResponseDto> Login(LoginDto dto)
         {
             var user = await _repo.GetByEmailAsync(dto.Email);
@@ -69,31 +72,30 @@ namespace VisitTracking.Application.Services
                 };
             }
 
-            // ✅ Check password first
+            // ✅ 🔥 Active Check (IMPORTANT)
+            if ((bool)!user.IsActive)
+            {
+                return new LoginResponseDto
+                {
+                    Token = null,
+                    Role = null,
+                    IsFirstLogin = false,
+                    Message = "Your account is inactive. Contact admin."
+                };
+            }
+
+            // Password check
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             {
                 return new LoginResponseDto
                 {
                     Token = null,
                     Role = null,
-                    IsFirstLogin = (bool)user.IsFirstLogin,
+                    IsFirstLogin = false,
                     Message = "Invalid credentials"
                 };
             }
 
-            // ✅ Check first login
-            if ((bool)user.IsFirstLogin)
-            {
-                return new LoginResponseDto
-                {
-                    Token = null,
-                    Role = null,
-                    IsFirstLogin = true,
-                    Message = "Please change your password first"
-                };
-            }
-
-            // Normal login
             var role = await _context.Set<Role>()
                 .Where(r => r.Id == user.RoleId)
                 .Select(r => r.RoleName)
@@ -103,13 +105,11 @@ namespace VisitTracking.Application.Services
             {
                 Token = GenerateJwt(user, role),
                 Role = role,
-                IsFirstLogin = false,
+                IsFirstLogin = user.IsFirstLogin ?? false,
                 Message = "Login successful"
-
-
             };
         }
-           
+
 
         // ================= JWT =================
         private string GenerateJwt(User user, string role)
@@ -133,8 +133,8 @@ namespace VisitTracking.Application.Services
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: "yourapp",
-                audience: "yourapp",
+                issuer: _config["Jwt:Issuer"],   
+              audience: _config["Jwt:Audience"], 
                 claims: claims,
                 expires: DateTime.Now.AddHours(2),
                 signingCredentials: creds
@@ -228,6 +228,19 @@ namespace VisitTracking.Application.Services
                 await _context.Users.AddAsync(user);
                 await _context.SaveChangesAsync();
 
+                await _auditService.CreateAsync(new AuditLogDto
+                {
+                    TableName = "Users",
+                    RecordId = user.Id,
+                    ActionType = "INSERT",
+                    OldValueJson = null,
+                    NewValueJson = JsonConvert.SerializeObject(user, new JsonSerializerSettings
+                    {
+                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                    }),
+                    ActionBy = 1
+                });
+
                 //Console.WriteLine($"Incoming ReportingManagerId: {dto.ReportingManagerId}");
 
                 // ✅ VALIDATE REPORTING MANAGER (FROM EMPLOYEE TABLE)
@@ -267,6 +280,19 @@ namespace VisitTracking.Application.Services
                 {
                     throw new Exception("Employee cannot be their own manager");
                 }
+
+                await _auditService.CreateAsync(new AuditLogDto
+                {
+                    TableName = "Employees",
+                    RecordId = employee.Id,
+                    ActionType = "INSERT",
+                    OldValueJson = null,
+                    NewValueJson = JsonConvert.SerializeObject(employee, new JsonSerializerSettings
+                    {
+                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                    }),
+                    ActionBy = 1
+                });
 
                 // ✅ SEND EMAIL
                 var body = EmpRegEmailTemplate.Build(
@@ -346,40 +372,36 @@ namespace VisitTracking.Application.Services
             return _repo.AddAsync(user);
         }
 
-        public Task UpdateAsync(object user)
+        public async Task UpdateAsync(User user)
         {
-            var userEntity = user as User;
-            if (userEntity == null)
-                throw new ArgumentException("Invalid user object");
-            return _repo.UpdateAsync(userEntity);
+            var existingUser = await _repo.GetByIdAsync(user.Id)
+                ?? throw new Exception("User not found");
 
+            existingUser.FullName = user.FullName;
+            existingUser.Email = user.Email;
+            existingUser.Mobile = user.Mobile;
+            existingUser.PasswordHash = user.PasswordHash;
+            existingUser.IsFirstLogin = user.IsFirstLogin;
+
+            await _repo.UpdateAsync(existingUser); // ✅ actual update
         }
-
-        public Task<User> GetByEmailAsync(string email)
+        public async Task<User> GetByEmailAsync(string email)
         {
-            var user = _repo.GetByEmailAsync(email);
+            var user = await _repo.GetByEmailAsync(email);
+
             if (user == null)
                 throw new Exception("User not found");
+
             return user;
         }
-
-        public Task<User> GetUserByIdAsync(int userId)
+        public async Task<User> GetUserByIdAsync(int userId)
         {
-            var user = _repo.GetByIdAsync(userId);
+            var user = await _repo.GetByIdAsync(userId);
+
             if (user == null)
                 throw new Exception("User not found");
+
             return user;
-        }
-
-        public Task UpdateAsync(User user)
-        {
-            var existingUser = _repo.GetByIdAsync(user.Id);
-            if (existingUser == null)
-                throw new Exception("User not found");
-            return existingUser;
-            
-
         }
     }
 }
-

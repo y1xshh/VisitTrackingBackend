@@ -19,7 +19,6 @@ public class ContactpersonRepository : IContactpersonRepository
             .Include(x => x.Company)
             .Include(x => x.Department)
             .Include(x => x.Organisation)
-            .Include(x => x.Designation) // 🔥 important
             .ToListAsync();
     }
 
@@ -30,7 +29,6 @@ public class ContactpersonRepository : IContactpersonRepository
             .Include(x => x.Company)
             .Include(x => x.Department)
             .Include(x => x.Organisation)
-            .Include(x => x.Designation) // 🔥 important
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 

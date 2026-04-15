@@ -1,4 +1,5 @@
-﻿using VisitTracking.Application.DTOs;
+using Newtonsoft.Json;
+using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Application.Interfaces;
 using VisitTracking.Domain.Entities;
@@ -8,10 +9,12 @@ namespace VisitTracking.Application.Services;
 public class LocationService : ILocationService
 {
     private readonly ILocationRepository _repo;
+    private readonly IAuditLogService _auditService;
 
-    public LocationService(ILocationRepository repo)
+    public LocationService(ILocationRepository repo, IAuditLogService auditLogService)
     {
         _repo = repo;
+        _auditService = auditLogService;
     }
 
     public async Task<List<LocationDto>> GetAllAsync()
@@ -55,6 +58,20 @@ public class LocationService : ILocationService
         };
 
         await _repo.AddAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Location",
+            RecordId = entity.Id,
+            ActionType = "INSERT",
+            OldValueJson = null,
+            NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
+
         return "Created Successfully";
     }
 
@@ -63,6 +80,11 @@ public class LocationService : ILocationService
         var entity = await _repo.GetByIdAsync(id);
         if (entity == null) return "Not Found";
 
+        var oldValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        });
+
         entity.LocationName = dto.LocationName;
         entity.State = dto.State;
         entity.Country = dto.Country;
@@ -70,6 +92,20 @@ public class LocationService : ILocationService
         entity.UpdatedDate = DateTime.UtcNow;
 
         await _repo.UpdateAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Location",
+            RecordId = entity.Id,
+            ActionType = "UPDATE",
+            OldValueJson = oldValueJson,
+            NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
+
         return "Updated Successfully";
     }
 
@@ -79,6 +115,20 @@ public class LocationService : ILocationService
         if (entity == null) return "Not Found";
 
         await _repo.DeleteAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Location",
+            RecordId = entity.Id,
+            ActionType = "DELETE",
+            OldValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            NewValueJson = null,
+            ActionBy = 1
+        });
+
         return "Deleted Successfully";
     }
 }

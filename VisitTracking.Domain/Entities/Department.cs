@@ -23,7 +23,7 @@ public partial class Department
 
     public virtual ICollection<Contactperson> Contactpeople { get; set; } = new List<Contactperson>();
 
-    public virtual ICollection<MstDesignation> MstDesignations { get; set; } = new List<MstDesignation>();
+    public virtual ICollection<MstDesignation> DesignationName { get; set; } = new List<MstDesignation>();
 
     public virtual Organisation? Organisation { get; set; }
 }

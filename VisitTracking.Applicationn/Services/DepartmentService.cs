@@ -1,4 +1,5 @@
-﻿using VisitTracking.Application.DTOs;
+using Newtonsoft.Json;
+using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
@@ -9,26 +10,39 @@ namespace VisitTracking.Application.Services
     public class DepartmentService : IDepartmentService
     {
         private readonly IDepartmentRepository _repository;
+        private readonly IAuditLogService _auditService;
 
-        public DepartmentService(IDepartmentRepository repository)
+        public DepartmentService(IDepartmentRepository repository, IAuditLogService auditLogService)
         {
             _repository = repository;
+            _auditService = auditLogService;
         }
 
-        public async Task<List<Department>> GetAllAsync()
+        public async Task<List<DepartmentDto>> GetAllAsync()
         {
-           
-           var data = await _repository.GetAllAsync();
-            return data;    
+            var data = await _repository.GetAllAsync();
 
-
+            return data.Select(x => new DepartmentDto
+            {
+                Id = x.Id,
+                DepartmentName = x.DepartmentName,
+                OrganisationId = (int)(x.OrganisationId ?? 0),
+                Designations = x.DesignationName.Select(d => d.DesignationName).ToList()
+            }).ToList();
         }
 
-        public async Task<Department> GetByIdAsync(int id)
+        public async Task<DepartmentDto> GetByIdAsync(int id)
         {
-            var dep = await _repository.GetByIdAsync(id);   
-            return dep;
+            var dep = await _repository.GetByIdAsync(id);
+            if (dep == null) return null;
 
+            return new DepartmentDto
+            {
+                Id = dep.Id,
+                DepartmentName = dep.DepartmentName,
+                OrganisationId = (int)(dep.OrganisationId ?? 0),
+                Designations = dep.DesignationName.Select(d => d.DesignationName).ToList()
+            };
         }
 
         public async Task Create(DepartmentDto dto)
@@ -37,10 +51,22 @@ namespace VisitTracking.Application.Services
             {
                 DepartmentName = dto.DepartmentName,
                 OrganisationId = dto.OrganisationId,
-               
             };
 
             await _repository.AddAsync(dep);
+
+            await _auditService.CreateAsync(new AuditLogDto
+            {
+                TableName = "Department",
+                RecordId = dep.Id,
+                ActionType = "INSERT",
+                OldValueJson = null,
+                NewValueJson = JsonConvert.SerializeObject(dep, new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                }),
+                ActionBy = 1
+            });
         }
 
         public async Task UpdateAsync(int id, DepartmentDto dto)
@@ -48,18 +74,49 @@ namespace VisitTracking.Application.Services
             var dep = await _repository.GetByIdAsync(id);
             if (dep == null) return;
 
+            var oldValueJson = JsonConvert.SerializeObject(dep, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            });
+
             dep.DepartmentName = dto.DepartmentName;
             dep.OrganisationId = dto.OrganisationId;
-            
 
             await _repository.UpdateAsync(dep);
+
+            await _auditService.CreateAsync(new AuditLogDto
+            {
+                TableName = "Department",
+                RecordId = dep.Id,
+                ActionType = "UPDATE",
+                OldValueJson = oldValueJson,
+                NewValueJson = JsonConvert.SerializeObject(dep, new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                }),
+                ActionBy = 1
+            });
         }
+
         public async Task DeleteAsync(int id)
         {
             var dep = await _repository.GetByIdAsync(id);
             if (dep == null) return;
 
-            await _repository.DeleteAsync(dep);
+            await _repository.DeleteAsync(dep.Id);
+
+            await _auditService.CreateAsync(new AuditLogDto
+            {
+                TableName = "Department",
+                RecordId = dep.Id,
+                ActionType = "DELETE",
+                OldValueJson = JsonConvert.SerializeObject(dep, new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                }),
+                NewValueJson = null,
+                ActionBy = 1
+            });
         }
     }
 }

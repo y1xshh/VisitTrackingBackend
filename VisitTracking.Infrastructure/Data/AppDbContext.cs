@@ -371,7 +371,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("updated_date");
 
-            entity.HasOne(d => d.Department).WithMany(p => p.MstDesignations)
+            entity.HasOne(d => d.Department).WithMany(p => p.DesignationName)
                 .HasForeignKey(d => d.DepartmentId)
                 .HasConstraintName("fk_designation_department");
         });
