@@ -93,6 +93,7 @@ namespace VisitTracking.Application.Services
             user.FullName = dto.FullName ?? "";
             user.Email = dto.Email ?? "";
             user.Mobile = dto.Mobile ?? "";
+            user.IsActive = dto.IsActive;
 
             await _repository.UpdateAsync(user);
 

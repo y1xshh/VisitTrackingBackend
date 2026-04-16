@@ -27,7 +27,7 @@ public class VehicleTypeService : IVehicleTypeService
         }).ToList();
     }
 
-    public async Task<VehicleTypeDto> GetByIdAsync(int id)
+    public async Task<VehicleTypeDto?> GetByIdAsync(int id)
     {
         var x = await _repository.GetByIdAsync(id);
 
@@ -57,11 +57,11 @@ public class VehicleTypeService : IVehicleTypeService
             TableName = "VehicleType",
             RecordId = entity.Id,
             ActionType = "INSERT",
-            OldValueJson = null,
+            OldValueJson = string.Empty,
             NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            }),
+            }) ?? string.Empty,
             ActionBy = 1
         });
     }
@@ -74,7 +74,7 @@ public class VehicleTypeService : IVehicleTypeService
         var oldValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
         {
             ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        });
+        }) ?? string.Empty;
 
         entity.VehicleName = dto.VehicleName;
         entity.DefaultRatePerKm = dto.DefaultRatePerKm;
@@ -91,7 +91,7 @@ public class VehicleTypeService : IVehicleTypeService
             NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            }),
+            }) ?? string.Empty,
             ActionBy = 1
         });
     }
@@ -110,11 +110,11 @@ public class VehicleTypeService : IVehicleTypeService
             OldValueJson = oldEntity == null ? JsonConvert.SerializeObject(new { Id = id }, new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            }) : JsonConvert.SerializeObject(oldEntity, new JsonSerializerSettings
+            }) ?? string.Empty : JsonConvert.SerializeObject(oldEntity, new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            }),
-            NewValueJson = null,
+            }) ?? string.Empty,
+            NewValueJson = string.Empty,
             ActionBy = 1
         });
     }

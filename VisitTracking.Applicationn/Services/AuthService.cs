@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
@@ -63,8 +63,8 @@ namespace VisitTracking.Application.Services
             {
                 return new LoginResponseDto
                 {
-                    Token = null,
-                    Role = null,
+                    Token = string.Empty,
+                    Role = string.Empty,
                     IsFirstLogin = false,
                     Message = "Invalid credentials"
                 };
@@ -74,8 +74,8 @@ namespace VisitTracking.Application.Services
             {
                 return new LoginResponseDto
                 {
-                    Token = null,
-                    Role = null,
+                    Token = string.Empty,
+                    Role = string.Empty,
                     IsFirstLogin = false,
                     Message = "Your account is inactive. Contact admin."
                 };
@@ -85,8 +85,8 @@ namespace VisitTracking.Application.Services
             {
                 return new LoginResponseDto
                 {
-                    Token = null,
-                    Role = null,
+                    Token = string.Empty,
+                    Role = string.Empty,
                     IsFirstLogin = false,
                     Message = "Invalid credentials"
                 };
@@ -100,7 +100,7 @@ namespace VisitTracking.Application.Services
             return new LoginResponseDto
             {
                 Token = GenerateJwt(user, role ?? string.Empty),
-                Role = role,
+                Role = role ?? string.Empty,
                 IsFirstLogin = user.IsFirstLogin ?? false,
                 Message = "Login successful"
             };
@@ -113,9 +113,9 @@ namespace VisitTracking.Application.Services
                 new Claim("id", user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.FullName ?? string.Empty),
                 new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-                new Claim(ClaimTypes.Role, role ?? string.Empty),
+                new Claim(ClaimTypes.Role, role),
                 new Claim("designationId", user.DesignationId?.ToString() ?? string.Empty),
-                new Claim("departmentId", user.DepartmentId.ToString() ?? string.Empty)
+                new Claim("departmentId", user.DepartmentId?.ToString() ?? string.Empty)
             };
 
             var key = new SymmetricSecurityKey(
@@ -137,40 +137,75 @@ namespace VisitTracking.Application.Services
 
         public async Task<string> CreateUserByAdmin(CreateUserByAdminDto dto)
         {
-            var roleExists = await _context.Set<Role>().AnyAsync(x => x.Id == dto.RoleId);
-            var deptExists = await _context.Set<Department>().AnyAsync(x => x.Id == dto.DepartmentId);
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-            if (!roleExists) return "Invalid RoleId";
-            if (!deptExists) return "Invalid DepartmentId";
-
-            var randomPassword = GeneratePassword();
-
-            var user = new User
+            try
             {
-                FullName = dto.FullName,
-                Email = dto.Email,
-                Mobile = dto.Mobile,
-                RoleId = dto.RoleId,
-                DepartmentId = dto.DepartmentId,
-                DesignationId = dto.DesignationId,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(randomPassword),
-                IsFirstLogin = true,
-                IsActive = true,
-                InsertedBy = "admin",
-                InsertedDate = DateTime.UtcNow
-            };
+                var roleExists = await _context.Set<Role>().AnyAsync(x => x.Id == dto.RoleId);
+                var deptExists = await _context.Set<Department>().AnyAsync(x => x.Id == dto.DepartmentId);
 
-            await _repo.AddAsync(user);
+                if (!roleExists) return "Invalid RoleId";
+                if (!deptExists) return "Invalid DepartmentId";
 
-            var body = EmpRegEmailTemplate.Build(user.FullName, user.Email, randomPassword);
+                if (dto.ReportingManagerId.HasValue)
+                {
+                    var managerExists = await _context.Set<Employee>()
+                        .AnyAsync(x => x.Id == dto.ReportingManagerId.Value);
 
-            await _emailService.SendEmailAsync(
-                user.Email,
-                "Account Created",
-                body
-            );
+                    if (!managerExists)
+                        return $"ReportingManagerId {dto.ReportingManagerId} not found in employees table";
+                }
 
-            return "User created successfully";
+                var randomPassword = GeneratePassword();
+
+                var user = new User
+                {
+                    FullName = dto.FullName,
+                    Email = dto.Email,
+                    Mobile = dto.Mobile,
+                    RoleId = dto.RoleId,
+                    DepartmentId = dto.DepartmentId,
+                    DesignationId = dto.DesignationId,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(randomPassword),
+                    IsFirstLogin = true,
+                    IsActive = true,
+                    InsertedBy = "admin",
+                    InsertedDate = DateTime.UtcNow
+                };
+
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
+
+                var employee = new Employee
+                {
+                    UserId = user.Id,
+                    EmployeeCode = $"EMP{user.Id}",
+                    DesignationId = dto.DesignationId > 0 ? dto.DesignationId : null,
+                    ReportingManagerId = dto.ReportingManagerId,
+                    IsActive = true,
+                    InsertedBy = "admin",
+                    InsertedDate = DateTime.UtcNow
+                };
+
+                await _context.Set<Employee>().AddAsync(employee);
+                await _context.SaveChangesAsync();
+
+                var body = EmpRegEmailTemplate.Build(user.FullName, user.Email, randomPassword);
+
+                await _emailService.SendEmailAsync(
+                    user.Email,
+                    "Account Created",
+                    body
+                );
+
+                await transaction.CommitAsync();
+                return "User created successfully";
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task CreateEmployee(EmployeeUserDto dto)
@@ -213,11 +248,11 @@ namespace VisitTracking.Application.Services
                     TableName = "Users",
                     RecordId = user.Id,
                     ActionType = "INSERT",
-                    OldValueJson = null,
+                    OldValueJson = string.Empty,
                     NewValueJson = JsonConvert.SerializeObject(user, new JsonSerializerSettings
                     {
                         ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                    }),
+                    }) ?? string.Empty,
                     ActionBy = 1
                 });
 
@@ -254,11 +289,11 @@ namespace VisitTracking.Application.Services
                     TableName = "Employees",
                     RecordId = employee.Id,
                     ActionType = "INSERT",
-                    OldValueJson = null,
+                    OldValueJson = string.Empty,
                     NewValueJson = JsonConvert.SerializeObject(employee, new JsonSerializerSettings
                     {
                         ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                    }),
+                    }) ?? string.Empty,
                     ActionBy = 1
                 });
 

@@ -58,24 +58,26 @@ public class OutcomeTypeService : IOutcomeTypeService
             TableName = "Outcometype",
             RecordId = entity.Id,
             ActionType = "INSERT",
-            OldValueJson = null,
+            OldValueJson = string.Empty,
             NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            }),
+            }) ?? string.Empty,
             ActionBy = 1
         });
     }
 
     public async Task UpdateAsync(OutcomeTypeDto dto)
     {
-        var existingEntity = await _repo.GetByIdAsync((int)dto.Id);
+        if (!dto.Id.HasValue) return;
+
+        var existingEntity = await _repo.GetByIdAsync(dto.Id.Value);
         if (existingEntity == null) return;
 
         var oldValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
         {
             ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        });
+        }) ?? string.Empty;
 
         existingEntity.OutcomeName = dto.OutComeName;
         existingEntity.IsRevenueLinked = dto.IsRevenueLinked;
@@ -93,7 +95,7 @@ public class OutcomeTypeService : IOutcomeTypeService
             NewValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            }),
+            }) ?? string.Empty,
             ActionBy = 1
         });
     }
@@ -106,7 +108,7 @@ public class OutcomeTypeService : IOutcomeTypeService
         var oldValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
         {
             ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        });
+        }) ?? string.Empty;
 
         await _repo.DeleteAsync(id);
 
@@ -116,7 +118,7 @@ public class OutcomeTypeService : IOutcomeTypeService
             RecordId = id,
             ActionType = "DELETE",
             OldValueJson = oldValueJson,
-            NewValueJson = null,
+            NewValueJson = string.Empty,
             ActionBy = 1
         });
     }

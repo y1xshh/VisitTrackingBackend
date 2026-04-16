@@ -435,6 +435,10 @@ public partial class AppDbContext : DbContext
                 .ValueGeneratedOnAddOrUpdate()
                 .HasColumnType("datetime")
                 .HasColumnName("updated_date");
+
+            entity.HasOne(d => d.Company).WithMany()
+                .HasForeignKey(d => d.CompanyId)
+                .HasConstraintName("organisations_ibfk_1");
         });
 
         modelBuilder.Entity<Outcometype>(entity =>

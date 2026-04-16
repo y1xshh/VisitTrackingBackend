@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 using VisitTracking.Infrastructure.Data;
@@ -15,12 +15,12 @@ public class DepartmentRepository : IDepartmentRepository
     public async Task<List<Department>> GetAllAsync()
     {
         return await _context.Departments
-            .Include(x => x.DesignationName) 
+            .Include(x => x.DesignationName)
             .Where(x => x.IsActive == true)
             .ToListAsync();
     }
 
-    public async Task<Department> GetByIdAsync(int id)
+    public async Task<Department?> GetByIdAsync(int id)
     {
         return await _context.Departments
             .Include(x => x.Organisation)
@@ -52,7 +52,7 @@ public class DepartmentRepository : IDepartmentRepository
         var dep = await _context.Departments.FindAsync(id);
         if (dep != null)
         {
-            dep.IsActive = false; 
+            dep.IsActive = false;
             await _context.SaveChangesAsync();
         }
     }

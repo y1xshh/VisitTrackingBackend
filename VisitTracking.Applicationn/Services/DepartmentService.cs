@@ -25,13 +25,13 @@ namespace VisitTracking.Application.Services
             return data.Select(x => new DepartmentDto
             {
                 Id = x.Id,
-                DepartmentName = x.DepartmentName,
+                DepartmentName = x.DepartmentName ?? string.Empty,
                 OrganisationId = (int)(x.OrganisationId ?? 0),
-                Designations = x.DesignationName.Select(d => d.DesignationName).ToList()
+                Designations = x.DesignationName.Select(d => d.DesignationName ?? string.Empty).ToList()
             }).ToList();
         }
 
-        public async Task<DepartmentDto> GetByIdAsync(int id)
+        public async Task<DepartmentDto?> GetByIdAsync(int id)
         {
             var dep = await _repository.GetByIdAsync(id);
             if (dep == null) return null;
@@ -39,9 +39,9 @@ namespace VisitTracking.Application.Services
             return new DepartmentDto
             {
                 Id = dep.Id,
-                DepartmentName = dep.DepartmentName,
+                DepartmentName = dep.DepartmentName ?? string.Empty,
                 OrganisationId = (int)(dep.OrganisationId ?? 0),
-                Designations = dep.DesignationName.Select(d => d.DesignationName).ToList()
+                Designations = dep.DesignationName.Select(d => d.DesignationName ?? string.Empty).ToList()
             };
         }
 
@@ -60,11 +60,11 @@ namespace VisitTracking.Application.Services
                 TableName = "Department",
                 RecordId = dep.Id,
                 ActionType = "INSERT",
-                OldValueJson = null,
+                OldValueJson = string.Empty,
                 NewValueJson = JsonConvert.SerializeObject(dep, new JsonSerializerSettings
                 {
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                }),
+                }) ?? string.Empty,
                 ActionBy = 1
             });
         }
@@ -77,7 +77,7 @@ namespace VisitTracking.Application.Services
             var oldValueJson = JsonConvert.SerializeObject(dep, new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            });
+            }) ?? string.Empty;
 
             dep.DepartmentName = dto.DepartmentName;
             dep.OrganisationId = dto.OrganisationId;
@@ -93,7 +93,7 @@ namespace VisitTracking.Application.Services
                 NewValueJson = JsonConvert.SerializeObject(dep, new JsonSerializerSettings
                 {
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                }),
+                }) ?? string.Empty,
                 ActionBy = 1
             });
         }
@@ -113,8 +113,8 @@ namespace VisitTracking.Application.Services
                 OldValueJson = JsonConvert.SerializeObject(dep, new JsonSerializerSettings
                 {
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                }),
-                NewValueJson = null,
+                }) ?? string.Empty,
+                NewValueJson = string.Empty,
                 ActionBy = 1
             });
         }

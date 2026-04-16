@@ -1,9 +1,9 @@
-﻿namespace VisitTracking.Application.DTOs;
+namespace VisitTracking.Application.DTOs;
 
 public class OrganisationDto
 {
     public int Id { get; set; }
-    public string OrganisationName { get; set; }
+    public string OrganisationName { get; set; } = string.Empty;
     public int CompanyId { get; set; }
     public string? CompanyName { get; set; }
 

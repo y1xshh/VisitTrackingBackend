@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 using VisitTracking.Infrastructure.Data;
@@ -12,7 +12,6 @@ public class ContactpersonRepository : IContactpersonRepository
         _context = context;
     }
 
-    // ✅ FIXED GET ALL
     public async Task<List<Contactperson>> GetAllAsync()
     {
         return await _context.Contactpersons
@@ -22,8 +21,7 @@ public class ContactpersonRepository : IContactpersonRepository
             .ToListAsync();
     }
 
-    // ✅ FIXED GET BY ID
-    public async Task<Contactperson> GetByIdAsync(int id)
+    public async Task<Contactperson?> GetByIdAsync(int id)
     {
         return await _context.Contactpersons
             .Include(x => x.Company)
@@ -34,7 +32,7 @@ public class ContactpersonRepository : IContactpersonRepository
 
     public async Task AddAsync(Contactperson entity)
     {
-       var entry = await _context.Contactpersons.AddAsync(entity);
+        var entry = await _context.Contactpersons.AddAsync(entity);
         await _context.SaveChangesAsync();
     }
 
@@ -55,7 +53,12 @@ public class ContactpersonRepository : IContactpersonRepository
             _context.Contactpersons.Update(existingEntity);
             await _context.SaveChangesAsync();
         }
+    }
 
+    public Task<Contactperson?> GetByEmailAsync(string email)
+    {
+        var data = _context.Contactpersons.FirstOrDefault(x => x.Email == email);
+        return Task.FromResult(data);
     }
 
     public async Task DeleteAsync(int id)
@@ -68,13 +71,6 @@ public class ContactpersonRepository : IContactpersonRepository
         }
     }
 
-    public Task GetByEmailAsync(string email)
-    {
-        var data = _context.Contactpersons.FirstOrDefault(x => x.Email == email);
-        return Task.FromResult(data);
-
-    }
-
     public Task DeleteAsync(Contactperson entity)
     {
         var data = _context.Contactpersons.Find(entity.Id);
@@ -84,6 +80,5 @@ public class ContactpersonRepository : IContactpersonRepository
             return _context.SaveChangesAsync();
         }
         return Task.CompletedTask;
-
     }
 }

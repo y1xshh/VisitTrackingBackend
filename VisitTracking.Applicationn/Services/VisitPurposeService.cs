@@ -20,7 +20,7 @@ public class VisitPurposeService : IVisitPurposeService
         return await _repository.GetAllAsync();
     }
 
-    public async Task<Visitpurpose> GetByIdAsync(int id)
+    public async Task<Visitpurpose?> GetByIdAsync(int id)
     {
         return await _repository.GetByIdAsync(id);
     }

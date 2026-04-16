@@ -20,7 +20,7 @@ public class RoleService : IRoleService
         return await _repository.GetAllAsync();
     }
 
-    public async Task<Role> GetByIdAsync(int id)
+    public async Task<Role?> GetByIdAsync(int id)
     {
         return await _repository.GetByIdAsync(id);
     }

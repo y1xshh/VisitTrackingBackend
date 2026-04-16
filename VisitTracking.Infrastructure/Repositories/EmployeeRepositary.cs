@@ -11,12 +11,17 @@ public class EmployeeRepository(AppDbContext context) : IEmployeeRepository
             .Include(x => x.Designation)
             .Include(x => x.Location)
             .Include(x => x.User)
+            .Include(x => x.ReportingManager)
+                .ThenInclude(x => x!.User)
             .OrderByDescending(x => x.Id)
             .ToListAsync();
 
     public async Task<Employee?> GetByIdAsync(int id) => await _context.Employees
             .Include(x => x.Designation)
             .Include(x => x.Location)
+            .Include(x => x.User)
+            .Include(x => x.ReportingManager)
+                .ThenInclude(x => x!.User)
             .FirstOrDefaultAsync(x => x.Id == id);
 
     public async Task UpdateAsync(Employee employee)

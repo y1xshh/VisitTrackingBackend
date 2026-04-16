@@ -24,7 +24,7 @@ namespace VisitTracking.Application.Services
             return await _repository.GetAllAsync();
         }
 
-        public async Task<Visit> GetByIdAsync(int id)
+        public async Task<Visit?> GetByIdAsync(int id)
         {
             return await _repository.GetByIdAsync(id);
         }

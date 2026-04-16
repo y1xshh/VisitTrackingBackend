@@ -24,9 +24,9 @@ public class OrganisationService : IOrganisationService
         return orgs.Select(x => new OrganisationDto
         {
             Id = x.Id,
-            OrganisationName = x.OrganisationName,
-            CompanyId = x.CompanyId ?? 0,
-            CompanyName = x.Company?.CompanyName,
+            OrganisationName = x.OrganisationName ?? string.Empty,
+            CompanyId = x.CompanyId.GetValueOrDefault(),
+            CompanyName = x.Company?.CompanyName ?? string.Empty,
             Address = x.Address,
             City = x.City,
             State = x.State
@@ -41,9 +41,9 @@ public class OrganisationService : IOrganisationService
         return new OrganisationDto
         {
             Id = x.Id,
-            OrganisationName = x.OrganisationName,
-            CompanyId = x.CompanyId ?? 0,
-            CompanyName = x.Company?.CompanyName,
+            OrganisationName = x.OrganisationName ?? string.Empty,
+            CompanyId = x.CompanyId.GetValueOrDefault(),
+            CompanyName = x.Company?.CompanyName ?? string.Empty,
             Address = x.Address,
             City = x.City,
             State = x.State
@@ -71,11 +71,11 @@ public class OrganisationService : IOrganisationService
             TableName = "Organisation",
             RecordId = entity.Id,
             ActionType = "INSERT",
-            OldValueJson = null,
+            OldValueJson = string.Empty,
             NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            }),
+            }) ?? string.Empty,
             ActionBy = 1
         });
     }
@@ -88,7 +88,7 @@ public class OrganisationService : IOrganisationService
         var oldValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
         {
             ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        });
+        }) ?? string.Empty;
 
         entity.OrganisationName = dto.OrganisationName;
         entity.CompanyId = dto.CompanyId;
@@ -109,7 +109,7 @@ public class OrganisationService : IOrganisationService
             NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            }),
+            }) ?? string.Empty,
             ActionBy = 1
         });
     }
@@ -122,7 +122,7 @@ public class OrganisationService : IOrganisationService
         var oldValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
         {
             ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        });
+        }) ?? string.Empty;
 
         entity.IsActive = false;
         entity.UpdatedDate = DateTime.UtcNow;
@@ -135,7 +135,7 @@ public class OrganisationService : IOrganisationService
             RecordId = entity.Id,
             ActionType = "DELETE",
             OldValueJson = oldValueJson,
-            NewValueJson = null,
+            NewValueJson = string.Empty,
             ActionBy = 1
         });
     }

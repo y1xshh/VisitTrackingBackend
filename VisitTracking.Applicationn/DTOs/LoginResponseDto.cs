@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,11 +8,9 @@ namespace VisitTracking.Application.DTOs
 {
         public class LoginResponseDto
         {
-            public string Token { get; set; }
-            public string Role { get; set; }
+            public string Token { get; set; } = string.Empty;
+            public string Role { get; set; } = string.Empty;
             public bool IsFirstLogin { get; set; }
-            public string Message { get; set; }
+            public string Message { get; set; } = string.Empty;
         }
     }
-
-   

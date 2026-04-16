@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 using VisitTracking.Infrastructure.Data;
@@ -17,7 +17,7 @@ public class VehicleTypeRepository : IVehicleTypeRepository
         return await _context.Vehicletypes.ToListAsync();
     }
 
-    public async Task<Vehicletype> GetByIdAsync(int id)
+    public async Task<Vehicletype?> GetByIdAsync(int id)
     {
         return await _context.Vehicletypes.FindAsync(id);
     }
