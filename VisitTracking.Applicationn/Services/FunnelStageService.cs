@@ -1,4 +1,5 @@
-﻿using VisitTracking.Application.DTOs;
+using Newtonsoft.Json;
+using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
@@ -6,12 +7,14 @@ using VisitTracking.Domain.RepositoryInterfaces;
 public class FunnelStageService : IFunnelStageService
 {
     private readonly IFunnelStageRepository _repo;
+    private readonly IAuditLogService _auditService;
 
     private static bool? NormalizeStageFlag(bool? value) => value == true ? true : null;
 
     public FunnelStageService(IFunnelStageRepository repo)
     {
         _repo = repo;
+        _auditService = auditLogService;
     }
 
     public async Task<IEnumerable<FunnelStageDto>> GetAllAsync()
@@ -69,6 +72,19 @@ public class FunnelStageService : IFunnelStageService
         };
 
         await _repo.AddAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Funnelstage",
+            RecordId = entity.Id,
+            ActionType = "INSERT",
+            OldValueJson = null,
+            NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
     }
 
     private static int? NewMethod(IEnumerable<Funnelstage> all)
@@ -78,7 +94,10 @@ public class FunnelStageService : IFunnelStageService
 
     public async Task UpdateAsync(FunnelStageDto dto)
     {
-        var entity = new Funnelstage
+        var existingEntity = await _repo.GetByIdAsync(dto.Id);
+        if (existingEntity == null) return;
+
+        var oldValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
         {
             Id = dto.Id,
             StageName = dto.StageName,
@@ -91,7 +110,18 @@ public class FunnelStageService : IFunnelStageService
             UpdatedDate = DateTime.Now
         };
 
-        await _repo.UpdateAsync(entity);
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Funnelstage",
+            RecordId = existingEntity.Id,
+            ActionType = "UPDATE",
+            OldValueJson = oldValueJson,
+            NewValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
     }
     public async Task<IEnumerable<object>> GetDropdownAsync()
     {

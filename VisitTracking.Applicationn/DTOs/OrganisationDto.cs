@@ -1,4 +1,4 @@
-﻿namespace VisitTracking.Application.DTOs;
+namespace VisitTracking.Application.DTOs;
 
 public class OrganisationDto
 {

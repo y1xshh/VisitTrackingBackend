@@ -28,7 +28,7 @@ namespace VisitTracking.Application.Services
             return await _repository.GetAllAsync();
         }
 
-        public async Task<Visit> GetByIdAsync(int id)
+        public async Task<Visit?> GetByIdAsync(int id)
         {
             return await _repository.GetByIdAsync(id);
         }
@@ -138,6 +138,19 @@ namespace VisitTracking.Application.Services
             };
 
             await _repository.AddAsync(entity);
+
+            await _auditService.CreateAsync(new AuditLogDto
+            {
+                TableName = "Visit",
+                RecordId = entity.Id,
+                ActionType = "INSERT",
+                OldValueJson = null,
+                NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                }),
+                ActionBy = 1
+            });
         }
 
         public async Task UpdateAsync(int id, VisitDto dto)
@@ -222,10 +235,31 @@ namespace VisitTracking.Application.Services
             data.UpdatedDate = DateTime.UtcNow;
 
             await _repository.UpdateAsync(data);
+
+            await _auditService.CreateAsync(new AuditLogDto
+            {
+                TableName = "Visit",
+                RecordId = data.Id,
+                ActionType = "UPDATE",
+                OldValueJson = oldValueJson,
+                NewValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                }),
+                ActionBy = 1
+            });
         }
 
         public async Task DeleteAsync(int id)
         {
+            var data = await _repository.GetByIdAsync(id);
+            if (data == null) return;
+
+            var oldValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            });
+
             await _repository.DeleteAsync(id);
 
         }

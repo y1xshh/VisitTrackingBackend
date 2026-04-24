@@ -1,4 +1,5 @@
-﻿using VisitTracking.Application.DTOs;
+using Newtonsoft.Json;
+using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
@@ -8,10 +9,12 @@ namespace VisitTracking.Application.Services;
 public class OrganisationService : IOrganisationService
 {
     private readonly IOrganisationRepository _repository;
+    private readonly IAuditLogService _auditService;
 
-    public OrganisationService(IOrganisationRepository repository)
+    public OrganisationService(IOrganisationRepository repository, IAuditLogService auditLogService)
     {
         _repository = repository;
+        _auditService = auditLogService;
     }
 
     public async Task<List<OrganisationDto>> GetAllAsync()
@@ -21,9 +24,9 @@ public class OrganisationService : IOrganisationService
         return orgs.Select(x => new OrganisationDto
         {
             Id = x.Id,
-            OrganisationName = x.OrganisationName,
-            CompanyId = x.CompanyId ?? 0,
-            CompanyName = x.Company?.CompanyName,
+            OrganisationName = x.OrganisationName ?? string.Empty,
+            CompanyId = x.CompanyId.GetValueOrDefault(),
+            CompanyName = x.Company?.CompanyName ?? string.Empty,
             Address = x.Address,
             City = x.City,
             State = x.State
@@ -38,9 +41,9 @@ public class OrganisationService : IOrganisationService
         return new OrganisationDto
         {
             Id = x.Id,
-            OrganisationName = x.OrganisationName,
-            CompanyId = x.CompanyId ?? 0,
-            CompanyName = x.Company?.CompanyName,
+            OrganisationName = x.OrganisationName ?? string.Empty,
+            CompanyId = x.CompanyId.GetValueOrDefault(),
+            CompanyName = x.Company?.CompanyName ?? string.Empty,
             Address = x.Address,
             City = x.City,
             State = x.State
@@ -62,12 +65,30 @@ public class OrganisationService : IOrganisationService
         };
 
         await _repository.AddAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Organisation",
+            RecordId = entity.Id,
+            ActionType = "INSERT",
+            OldValueJson = string.Empty,
+            NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }) ?? string.Empty,
+            ActionBy = 1
+        });
     }
 
     public async Task UpdateAsync(int id, OrganisationDto dto)
     {
         var entity = await _repository.GetByIdAsync(id);
         if (entity == null) return;
+
+        var oldValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        }) ?? string.Empty;
 
         entity.OrganisationName = dto.OrganisationName;
         entity.CompanyId = dto.CompanyId;
@@ -78,6 +99,19 @@ public class OrganisationService : IOrganisationService
         entity.UpdatedDate = DateTime.UtcNow;
 
         await _repository.UpdateAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Organisation",
+            RecordId = entity.Id,
+            ActionType = "UPDATE",
+            OldValueJson = oldValueJson,
+            NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }) ?? string.Empty,
+            ActionBy = 1
+        });
     }
 
     public async Task DeleteAsync(int id)
@@ -89,5 +123,15 @@ public class OrganisationService : IOrganisationService
         entity.UpdatedDate = DateTime.UtcNow;
 
         await _repository.UpdateAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Organisation",
+            RecordId = entity.Id,
+            ActionType = "DELETE",
+            OldValueJson = oldValueJson,
+            NewValueJson = string.Empty,
+            ActionBy = 1
+        });
     }
 }

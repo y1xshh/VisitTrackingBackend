@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using VisitTracking.Application.DTOs;
-using VisitTracking.Application.DTOs.VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 
 namespace VisitTracking.Api.Controllers

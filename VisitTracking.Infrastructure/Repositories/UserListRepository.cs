@@ -15,9 +15,9 @@ namespace VisitTracking.Infrastructure.Repositories
         }
 
         public async Task<List<User>> GetAllAsync()
-        { 
-
+        {
             return await _context.Users
+                .AsNoTracking()
                 .Include(u => u.Employees)
                 .Include(u => u.Role)
                 .ToListAsync();
@@ -25,10 +25,26 @@ namespace VisitTracking.Infrastructure.Repositories
 
         public async Task<User?> GetByIdAsync(int id)
         {
-            return await _context.Users
-            .Include(u => u.Employees)
-            .Include(u => u.Role)
-            .FirstOrDefaultAsync(u => u.Id == id);
+            var user = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (user == null)
+                return null;
+
+            user.Employees = await _context.Employees
+                .AsNoTracking()
+                .Where(e => e.UserId == id)
+                .ToListAsync();
+
+            if (user.RoleId.HasValue)
+            {
+                user.Role = await _context.Roles
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Id == user.RoleId.Value);
+            }
+
+            return user;
         }
 
         public async Task UpdateAsync(User user)

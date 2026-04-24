@@ -371,7 +371,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("updated_date");
 
-            entity.HasOne(d => d.Department).WithMany(p => p.MstDesignations)
+            entity.HasOne(d => d.Department).WithMany(p => p.DesignationName)
                 .HasForeignKey(d => d.DepartmentId)
                 .HasConstraintName("fk_designation_department");
         });
@@ -435,6 +435,10 @@ public partial class AppDbContext : DbContext
                 .ValueGeneratedOnAddOrUpdate()
                 .HasColumnType("datetime")
                 .HasColumnName("updated_date");
+
+            entity.HasOne(d => d.Company).WithMany()
+                .HasForeignKey(d => d.CompanyId)
+                .HasConstraintName("organisations_ibfk_1");
         });
 
         modelBuilder.Entity<Outcometype>(entity =>

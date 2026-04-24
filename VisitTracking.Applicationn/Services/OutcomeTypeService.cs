@@ -1,14 +1,18 @@
-﻿using VisitTracking.Application.DTOs;
+using Newtonsoft.Json;
+using VisitTracking.Application.DTOs;
+using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Application.Constants;
 
 public class OutcomeTypeService : IOutcomeTypeService
 {
     private readonly IOutcomeTypeRepository _repo;
+    private readonly IAuditLogService _auditService;
 
-    public OutcomeTypeService(IOutcomeTypeRepository repo)
+    public OutcomeTypeService(IOutcomeTypeRepository repo, IAuditLogService auditLogService)
     {
         _repo = repo;
+        _auditService = auditLogService;
     }
 
     public async Task<IEnumerable<OutcomeTypeDto>> GetAllAsync()
@@ -49,20 +53,52 @@ public class OutcomeTypeService : IOutcomeTypeService
         };
 
         await _repo.AddAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Outcometype",
+            RecordId = entity.Id,
+            ActionType = "INSERT",
+            OldValueJson = string.Empty,
+            NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }) ?? string.Empty,
+            ActionBy = 1
+        });
     }
 
     public async Task UpdateAsync(OutcomeTypeDto dto)
     {
-        var entity = new Outcometype
-        {
-            Id = (int)dto.Id,
-            OutcomeName = dto.OutComeName,
-            IsRevenueLinked = dto.IsRevenueLinked,
-            IsActive = dto.IsActive,
-            UpdatedDate = DateTime.Now
-        };
+        if (!dto.Id.HasValue) return;
 
-        await _repo.UpdateAsync(entity);
+        var existingEntity = await _repo.GetByIdAsync(dto.Id.Value);
+        if (existingEntity == null) return;
+
+        var oldValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        }) ?? string.Empty;
+
+        existingEntity.OutcomeName = dto.OutComeName;
+        existingEntity.IsRevenueLinked = dto.IsRevenueLinked;
+        existingEntity.IsActive = dto.IsActive;
+        existingEntity.UpdatedDate = DateTime.Now;
+
+        await _repo.UpdateAsync(existingEntity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Outcometype",
+            RecordId = existingEntity.Id,
+            ActionType = "UPDATE",
+            OldValueJson = oldValueJson,
+            NewValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }) ?? string.Empty,
+            ActionBy = 1
+        });
     }
     public async Task<IEnumerable<object>> GetDropdownAsync()
     {

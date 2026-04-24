@@ -1,14 +1,17 @@
-﻿using VisitTracking.Application.DTOs;
+using Newtonsoft.Json;
+using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 
 public class VisitFollowUpService : IVisitFollowUpService
 {
     private readonly IVisitFollowUpRepository _repo;
+    private readonly IAuditLogService _auditService;
 
-    public VisitFollowUpService(IVisitFollowUpRepository repo)
+    public VisitFollowUpService(IVisitFollowUpRepository repo, IAuditLogService auditLogService)
     {
         _repo = repo;
+        _auditService = auditLogService;
     }
 
     public async Task<IEnumerable<VisitFollowUpDto>> GetAllAsync()
@@ -86,33 +89,51 @@ public class VisitFollowUpService : IVisitFollowUpService
             entity.ActualBusinessValue = dto.ActualBusinessValue;
         }
 
-        await _repo.AddAsync(entity); 
-}
+        await _repo.AddAsync(entity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Visitfollowup",
+            RecordId = entity.Id,
+            ActionType = "INSERT",
+            OldValueJson = null,
+            NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
+    }
+
     public async Task UpdateAsync(VisitFollowUpDto dto)
     {
-        var entity = new Visitfollowup
+        var existingEntity = await _repo.GetByIdAsync(dto.Id);
+        if (existingEntity == null) return;
+
+        var oldValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
         {
-            Id = dto.Id,
-            VisitId = dto.VisitId,
-            FollowUpDate = dto.FollowUpDate,
-            FollowUpRemarks = dto.FollowUpRemarks,
-            FunnelStageId = dto.FunnelStageId,
-            OutcomeTypeId = dto.OutcomeTypeId,
-            ExpectedBusinessValue = dto.ExpectedBusinessValue,
-            ActualBusinessValue = dto.ActualBusinessValue,
-            NextFollowUpDate = dto.NextFollowUpDate,
-            IsActive = dto.IsActive,
-            UpdatedDate = DateTime.Now
-        };
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        });
+
+        existingEntity.VisitId = dto.VisitId;
+        existingEntity.FollowUpDate = dto.FollowUpDate;
+        existingEntity.FollowUpRemarks = dto.FollowUpRemarks;
+        existingEntity.FunnelStageId = dto.FunnelStageId;
+        existingEntity.OutcomeTypeId = dto.OutcomeTypeId;
+        existingEntity.ExpectedBusinessValue = dto.ExpectedBusinessValue;
+        existingEntity.ActualBusinessValue = dto.ActualBusinessValue;
+        existingEntity.NextFollowUpDate = dto.NextFollowUpDate;
+        existingEntity.IsActive = dto.IsActive;
+        existingEntity.UpdatedDate = DateTime.Now;
 
         
         if (dto.NextFollowUpDate == null && dto.FollowUpDate != null)
         {
-            entity.NextFollowUpDate = dto.FollowUpDate.Value.AddDays(2);
+            existingEntity.NextFollowUpDate = dto.FollowUpDate.Value.AddDays(2);
         }
         else
         {
-            entity.NextFollowUpDate = dto.NextFollowUpDate;
+            existingEntity.NextFollowUpDate = dto.NextFollowUpDate;
         }
 
         await _repo.UpdateAsync(entity);
@@ -126,11 +147,42 @@ public class VisitFollowUpService : IVisitFollowUpService
         entity.ActualBusinessValue = dto.ActualBusinessValue;
     }
 
-    await _repo.UpdateAsync(entity);
-}
+        await _repo.UpdateAsync(existingEntity);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Visitfollowup",
+            RecordId = existingEntity.Id,
+            ActionType = "UPDATE",
+            OldValueJson = oldValueJson,
+            NewValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }),
+            ActionBy = 1
+        });
+    }
 
     public async Task DeleteAsync(int id)
     {
+        var existingEntity = await _repo.GetByIdAsync(id);
+        if (existingEntity == null) return;
+
+        var oldValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        });
+
         await _repo.DeleteAsync(id);
+
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Visitfollowup",
+            RecordId = id,
+            ActionType = "DELETE",
+            OldValueJson = oldValueJson,
+            NewValueJson = null,
+            ActionBy = 1
+        });
     }
 }

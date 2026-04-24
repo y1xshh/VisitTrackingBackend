@@ -1,4 +1,4 @@
-﻿using VisitTracking.Application.DTOs;
+using VisitTracking.Application.DTOs;
 
 public interface IOutcomeTypeService
 {

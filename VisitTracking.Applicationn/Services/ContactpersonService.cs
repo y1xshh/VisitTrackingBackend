@@ -1,52 +1,66 @@
-﻿using VisitTracking.Application.DTOs;
-using VisitTracking.Application.DTOs.VisitTracking.Application.DTOs;
+using Newtonsoft.Json;
+using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 
-namespace VisitTracking.Application.Services
+namespace VisitTracking.Application.Services;
+
+public class ContactpersonService : IContactpersonService
 {
-    public class ContactpersonService : IContactpersonService
+    private readonly IContactpersonRepository _repository;
+    private readonly IAuditLogService _auditService;
+
+    public ContactpersonService(IContactpersonRepository repository, IAuditLogService auditLogService)
     {
-        private readonly IContactpersonRepository _repository;
+        _repository = repository;
+        _auditService = auditLogService;
+    }
 
-        public ContactpersonService(IContactpersonRepository repository)
+    public async Task<List<ContactpersonDto>> GetAllAsync()
+    {
+        var data = await _repository.GetAllAsync();
+
+        return data.Select(x => new ContactpersonDto
         {
-            _repository = repository;
-        }
+            Id = x.Id,
+            Name = x.Name,
+            Designation = x.Designation,
+            Mobile = x.Mobile,
+            Email = x.Email,
+            CompanyId = x.CompanyId,
+            OrganisationId = x.OrganisationId,
+            DepartmentId = x.DepartmentId,
+            Remark = x.Remarks,
+            IsActive = x.IsActive ?? false,
+            CompanyName = x.Company?.CompanyName,
+            DepartmentName = x.Department?.DepartmentName,
+            OrganisationName = x.Organisation?.OrganisationName
+        }).ToList();
+    }
 
-        // ✅ GET ALL
-        public async Task<List<ContactpersonDto>> GetAllAsync()
+    public async Task<ContactpersonDto?> GetByIdAsync(int id)
+    {
+        var x = await _repository.GetByIdAsync(id);
+        if (x == null) return null;
+
+        return new ContactpersonDto
         {
-            var data = await _repository.GetAllAsync();
-
-            return data.Select(x => new ContactpersonDto
-            {
-                Id = x.Id,
-                CompanyId = x.CompanyId,
-                OrganisationId = x.OrganisationId,
-                DepartmentId = x.DepartmentId,
-
-                Name = x.Name,
-                Designation = x.Designation,
-                Mobile = x.Mobile,
-                Email = x.Email,
-                Remark = x.Remarks,
-                IsActive = x.IsActive ?? false,
-
-                CompanyName = x.Company?.CompanyName,
-                DepartmentName = x.Department?.DepartmentName,
-                OrganisationName = x.Organisation?.OrganisationName
-            }).ToList();
-        }
-
-        // ✅ GET BY ID
-        public async Task<ContactpersonDto?> GetByIdAsync(int id)
-        {
-            var x = await _repository.GetByIdAsync(id);
-
-            if (x == null)
-                return null;
+            Id = x.Id,
+            Name = x.Name,
+            Designation = x.Designation,
+            Mobile = x.Mobile,
+            Email = x.Email,
+            Remark = x.Remarks,
+            IsActive = x.IsActive ?? false,
+            CompanyId = x.CompanyId,
+            OrganisationId = x.OrganisationId,
+            DepartmentId = x.DepartmentId,
+            CompanyName = x.Company?.CompanyName,
+            DepartmentName = x.Department?.DepartmentName,
+            OrganisationName = x.Organisation?.OrganisationName
+        };
+    }
 
             return new ContactpersonDto
             {
@@ -113,8 +127,10 @@ namespace VisitTracking.Application.Services
             data.UpdatedBy = "system"; 
             data.UpdatedDate = DateTime.UtcNow;
 
-            await _repository.UpdateAsync(data);
-        }
+    public async Task UpdateAsync(int id, ContactpersonDto dto)
+    {
+        var data = await _repository.GetByIdAsync(id);
+        if (data == null) return;
 
        
         public async Task DeleteAsync(int id)
@@ -128,26 +144,31 @@ namespace VisitTracking.Application.Services
             entity.IsActive = false;
             entity.UpdatedDate = DateTime.UtcNow;
 
-            await _repository.UpdateAsync(entity);
-        }
+    public async Task DeleteAsync(int id)
+    {
+        var entity = await _repository.GetByIdAsync(id);
+        if (entity == null) return;
 
         public async Task<ContactpersonDto?> GetByEmailAsync(string email)
         {
-            var data = await _repository.GetAllAsync();
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        });
 
-            var x = data.FirstOrDefault(x => x.Email == email);
+        await _repository.DeleteAsync(entity);
 
-            if (x == null)
-                return null;
+        await _auditService.CreateAsync(new AuditLogDto
+        {
+            TableName = "Contactperson",
+            RecordId = entity.Id,
+            ActionType = "DELETE",
+            OldValueJson = oldValueJson,
+            NewValueJson = null,
+            ActionBy = 1
+        });
+    }
 
-            return new ContactpersonDto
-            {
-                Id = x.Id,
-                Name = x.Name,
-                Email = x.Email,
-                Mobile = x.Mobile,
-                Designation = x.Designation
-            };
-        }
+    public Task<ContactpersonDto?> GetByEmailAsync(string email)
+    {
+        throw new NotImplementedException();
     }
 }

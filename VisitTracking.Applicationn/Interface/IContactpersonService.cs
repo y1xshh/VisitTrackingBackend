@@ -1,5 +1,4 @@
-﻿using VisitTracking.Application.DTOs.VisitTracking.Application.DTOs;
-using VisitTracking.Domain.Entities;
+﻿using VisitTracking.Application.DTOs;
 
 namespace VisitTracking.Application.Interface
 {

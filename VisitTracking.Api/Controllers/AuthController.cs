@@ -30,6 +30,7 @@ public class AuthController(IAuthService service) : ControllerBase
             return Unauthorized(result);
      
         return Ok(result);
+
     }
   
     [HttpPost("change-password")]

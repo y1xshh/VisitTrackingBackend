@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 using VisitTracking.Infrastructure.Data;
@@ -17,7 +17,7 @@ public class VisitpurposeRepository : IVisitPurposeRepository
         return await _context.Visitpurposes.ToListAsync();
     }
 
-    public async Task<Visitpurpose> GetByIdAsync(int id)
+    public async Task<Visitpurpose?> GetByIdAsync(int id)
     {
         return await _context.Visitpurposes.FindAsync(id);
     }

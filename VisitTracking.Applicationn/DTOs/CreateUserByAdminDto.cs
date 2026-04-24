@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 using VisitTracking.Domain.Entities;
 
 namespace VisitTracking.Application.DTOs
@@ -15,4 +15,4 @@ namespace VisitTracking.Application.DTOs
         }
 
     }
-
+}

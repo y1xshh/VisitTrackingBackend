@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 using VisitTracking.Infrastructure.Data;
@@ -20,7 +20,7 @@ namespace VisitTracking.Infrastructure.Repositories
             return data;
         }
 
-        public async Task<Expenserate> GetByIdAsync(int id)
+        public async Task<Expenserate?> GetByIdAsync(int id)
         {
           var data = await _context.Expenserates.FindAsync(id);
             if (data == null)

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 using VisitTracking.Infrastructure.Data;
@@ -17,7 +17,7 @@ public class RoleRepository : IRoleRepository
         return await _context.Roles.ToListAsync();
     }
 
-    public async Task<Role> GetByIdAsync(int id)
+    public async Task<Role?> GetByIdAsync(int id)
     {
         return await _context.Roles.FindAsync(id);
     }

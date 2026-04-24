@@ -1,4 +1,4 @@
-﻿using VisitTracking.Application.DTOs;
+using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
@@ -28,7 +28,7 @@ namespace VisitTracking.Application.Services
             });
         }
 
-        public async Task<ExpenserateDto> GetByIdAsync(int id)
+        public async Task<ExpenserateDto?> GetByIdAsync(int id)
         {
             var x = await _repo.GetByIdAsync(id);
             if (x == null) return null;
