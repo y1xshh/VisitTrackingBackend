@@ -81,7 +81,8 @@ namespace VisitTracking.Application.Services
                 };
             }
 
-            if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+             //✅ Check first login
+            if ((bool)user.IsFirstLogin)
             {
                 return new LoginResponseDto
                 {
@@ -243,19 +244,7 @@ namespace VisitTracking.Application.Services
                 await _context.Users.AddAsync(user);
                 await _context.SaveChangesAsync();
 
-                await _auditService.CreateAsync(new AuditLogDto
-                {
-                    TableName = "Users",
-                    RecordId = user.Id,
-                    ActionType = "INSERT",
-                    OldValueJson = string.Empty,
-                    NewValueJson = JsonConvert.SerializeObject(user, new JsonSerializerSettings
-                    {
-                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                    }) ?? string.Empty,
-                    ActionBy = 1
-                });
-
+                // ✅ VALIDATE REPORTING MANAGER (FROM EMPLOYEE TABLE)
                 if (dto.ReportingManagerId.HasValue)
                 {
                     var managerExists = await _context.Set<Employee>()
@@ -272,39 +261,30 @@ namespace VisitTracking.Application.Services
                     UserId = user.Id,
                     EmployeeCode = string.IsNullOrEmpty(dto.EmployeeCode) ? $"EMP{user.Id}" : dto.EmployeeCode,
                     DesignationId = dto.DesignationId > 0 ? dto.DesignationId : null,
-                    ReportingManagerId = dto.ReportingManagerId,
-                    LocationId = dto.LocationId
+
+                    ReportingManagerId = dto.ReportingManagerId, 
+                    LocationId = dto.LocationId,
+
+
                 };
 
                 await _context.Set<Employee>().AddAsync(employee);
-                await _context.SaveChangesAsync();
-
+                await _context.SaveChangesAsync();     
                 if (employee.ReportingManagerId == employee.Id)
                 {
                     throw new Exception("Employee cannot be their own manager");
                 }
-
-                await _auditService.CreateAsync(new AuditLogDto
-                {
-                    TableName = "Employees",
-                    RecordId = employee.Id,
-                    ActionType = "INSERT",
-                    OldValueJson = string.Empty,
-                    NewValueJson = JsonConvert.SerializeObject(employee, new JsonSerializerSettings
-                    {
-                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                    }) ?? string.Empty,
-                    ActionBy = 1
-                });
-
-                var body = EmpRegEmailTemplate.Build(user.FullName, user.Email, randomPassword);
+                var body = EmpRegEmailTemplate.Build(
+                    user.FullName,
+                    user.Email,
+                    randomPassword
+                );
 
                 await _emailService.SendEmailAsync(
                     user.Email,
                     "Employee Account Created",
                     body
                 );
-
                 await transaction.CommitAsync();
             }
             catch (Exception ex)
@@ -326,9 +306,8 @@ namespace VisitTracking.Application.Services
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
             user.IsFirstLogin = false;
-
             _context.Users.Update(user);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(); 
 
             return "Password changed successfully";
         }
@@ -358,7 +337,7 @@ namespace VisitTracking.Application.Services
             {
                 FullName = dto.FullName,
                 Email = dto.Email,
-                Mobile = dto.Mobile
+                Mobile = dto.Mobile,
             };
 
             return _repo.AddAsync(user);

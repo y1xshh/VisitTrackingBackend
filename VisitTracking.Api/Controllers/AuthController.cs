@@ -26,20 +26,15 @@ public class AuthController(IAuthService service) : ControllerBase
     {
         var result = await _service.Login(dto);
 
-        if (string.IsNullOrEmpty(result.Token))
+        if (result.Message == "Invalid credentials")
             return Unauthorized(result);
-
+     
         return Ok(result);
 
     }
-
-
-
-
-
-    // ✅ FIXED CHANGE PASSWORD
+  
     [HttpPost("change-password")]
-
+    [AllowAnonymous] 
     public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
     {
         var user = await _service.GetByEmailAsync(dto.Email);

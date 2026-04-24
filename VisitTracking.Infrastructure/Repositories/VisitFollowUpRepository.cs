@@ -14,7 +14,7 @@ public class VisitFollowUpRepository : IVisitFollowUpRepository
     public async Task<IEnumerable<Visitfollowup>> GetAllAsync()
     {
         return await _context.Visitfollowups
-            .Include(x => x.Visit) // optional
+            .Include(x => x.Visit) 
             .OrderByDescending(x => x.FollowUpDate)
             .ToListAsync();
     }

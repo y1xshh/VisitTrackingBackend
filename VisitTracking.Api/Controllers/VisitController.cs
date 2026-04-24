@@ -25,4 +25,25 @@ public class VisitController : ControllerBase
         await _service.Create(dto);
         return Ok("Visit Created");
     }
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] VisitDto dto)
+    {
+        await _service.UpdateAsync(id, dto);
+        return Ok("Visit Updated");
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var data = await _service.GetByIdAsync(id);
+        if (data == null) return NotFound();
+        return Ok(data);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        await _service.DeleteAsync(id);
+        return Ok("Visit Deleted");
+    }
 }

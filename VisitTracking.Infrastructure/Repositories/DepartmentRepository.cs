@@ -22,7 +22,7 @@ public class DepartmentRepository : IDepartmentRepository
 
     public async Task<Department?> GetByIdAsync(int id)
     {
-        return await _context.Departments
+        var dep = await _context.Departments
             .Include(x => x.Organisation)
             .FirstOrDefaultAsync(x => x.Id == id);
     }

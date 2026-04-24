@@ -62,81 +62,94 @@ public class ContactpersonService : IContactpersonService
         };
     }
 
-    public async Task Create(ContactpersonDto dto)
-    {
-        var entity = new Contactperson
-        {
-            CompanyId = dto.CompanyId,
-            OrganisationId = dto.OrganisationId,
-            DepartmentId = dto.DepartmentId,
-            Designation = dto.Designation,
-            Name = dto.Name,
-            Mobile = dto.Mobile,
-            Email = dto.Email,
-            Remarks = dto.Remark,
-            IsActive = dto.IsActive,
-            InsertedDate = DateTime.Now
-        };
-
-        await _repository.AddAsync(entity);
-
-        await _auditService.CreateAsync(new AuditLogDto
-        {
-            TableName = "Contactperson",
-            RecordId = entity.Id,
-            ActionType = "INSERT",
-            OldValueJson = null,
-            NewValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+            return new ContactpersonDto
             {
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            }),
-            ActionBy = 1
-        });
-    }
+                Id = x.Id,
+                CompanyId = x.CompanyId,
+                OrganisationId = x.OrganisationId,
+                DepartmentId = x.DepartmentId,
+
+                Name = x.Name,
+                Designation = x.Designation,
+                Mobile = x.Mobile,
+                Email = x.Email,
+                Remark = x.Remarks,
+                IsActive = x.IsActive ?? false,
+
+                CompanyName = x.Company?.CompanyName,
+                DepartmentName = x.Department?.DepartmentName,
+                OrganisationName = x.Organisation?.OrganisationName
+            };
+        }
+
+       
+        public async Task Create(ContactpersonDto dto)
+        {
+            var entity = new Contactperson
+            {
+                CompanyId = dto.CompanyId,
+                OrganisationId = dto.OrganisationId,
+                DepartmentId = dto.DepartmentId,
+
+                Name = dto.Name,
+                Designation = dto.Designation,
+                Mobile = dto.Mobile,
+                Email = dto.Email,
+                Remarks = dto.Remark,
+                IsActive = dto.IsActive,
+
+                InsertedBy = "system", 
+                InsertedDate = DateTime.UtcNow
+            };
+
+            await _repository.AddAsync(entity);
+        }
+
+  
+        public async Task UpdateAsync(int id, ContactpersonDto dto)
+        {
+            var data = await _repository.GetByIdAsync(id);
+
+            if (data == null)
+                throw new Exception("Contact person not found");
+
+            data.CompanyId = dto.CompanyId;
+            data.OrganisationId = dto.OrganisationId;
+            data.DepartmentId = dto.DepartmentId;
+
+            data.Name = dto.Name;
+            data.Designation = dto.Designation;
+            data.Mobile = dto.Mobile;
+            data.Email = dto.Email;
+            data.Remarks = dto.Remark;
+            data.IsActive = dto.IsActive;
+
+            data.UpdatedBy = "system"; 
+            data.UpdatedDate = DateTime.UtcNow;
 
     public async Task UpdateAsync(int id, ContactpersonDto dto)
     {
         var data = await _repository.GetByIdAsync(id);
         if (data == null) return;
 
-        var oldValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
+       
+        public async Task DeleteAsync(int id)
         {
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        });
+            var entity = await _repository.GetByIdAsync(id);
 
-        data.CompanyId = dto.CompanyId;
-        data.OrganisationId = dto.OrganisationId;
-        data.DepartmentId = dto.DepartmentId;
-        data.Designation = dto.Designation;
-        data.Name = dto.Name;
-        data.Mobile = dto.Mobile;
-        data.Email = dto.Email;
-        data.Remarks = dto.Remark;
-        data.IsActive = dto.IsActive;
-        data.UpdatedDate = DateTime.Now;
+            if (entity == null)
+                throw new Exception("Contact person not found");
 
-        await _repository.UpdateAsync(data);
-
-        await _auditService.CreateAsync(new AuditLogDto
-        {
-            TableName = "Contactperson",
-            RecordId = data.Id,
-            ActionType = "UPDATE",
-            OldValueJson = oldValueJson,
-            NewValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
-            {
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            }),
-            ActionBy = 1
-        });
-    }
+          
+            entity.IsActive = false;
+            entity.UpdatedDate = DateTime.UtcNow;
 
     public async Task DeleteAsync(int id)
     {
         var entity = await _repository.GetByIdAsync(id);
         if (entity == null) return;
 
-        var oldValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
+        public async Task<ContactpersonDto?> GetByEmailAsync(string email)
         {
             ReferenceLoopHandling = ReferenceLoopHandling.Ignore
         });

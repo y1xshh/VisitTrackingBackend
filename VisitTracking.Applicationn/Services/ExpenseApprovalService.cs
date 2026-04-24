@@ -57,7 +57,7 @@ public class ExpenseApprovalService : IExpenseApprovalService
         {
             VisitId = dto.VisitId,
             SubmittedBy = dto.SubmittedBy,
-            ApprovalStatus = "Pending",
+            ApprovalStatus = "Pending",   
             SubmittedAt = DateTime.Now,
             IsActive = true,
             InsertedDate = DateTime.Now
@@ -142,6 +142,7 @@ public class ExpenseApprovalService : IExpenseApprovalService
         });
     }
 
+   
     public async Task ApproveAsync(int id, int approvedBy, string? remarks)
     {
         var data = await _repo.GetByIdAsync(id);
@@ -173,6 +174,7 @@ public class ExpenseApprovalService : IExpenseApprovalService
         });
     }
 
+    
     public async Task RejectAsync(int id, int approvedBy, string? remarks)
     {
         var data = await _repo.GetByIdAsync(id);

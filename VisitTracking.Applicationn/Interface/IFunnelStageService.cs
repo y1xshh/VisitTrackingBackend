@@ -9,5 +9,6 @@ namespace VisitTracking.Application.Interface
         Task CreateAsync(FunnelStageDto dto);
         Task UpdateAsync(FunnelStageDto dto);
         Task DeleteAsync(int id);
+        Task<IEnumerable<object>> GetDropdownAsync();
     }
 }

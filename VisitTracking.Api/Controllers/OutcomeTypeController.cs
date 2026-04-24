@@ -49,5 +49,9 @@ namespace VisitTracking.Api.Controllers
             await _service.DeleteAsync(id);
             return Ok("Deleted Successfully");
         }
+
+        [HttpGet("dropdown")]
+        public async Task<IActionResult> GetDropdown()
+        => Ok(await _service.GetDropdownAsync());
     }
 }

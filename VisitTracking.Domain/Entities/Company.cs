@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace VisitTracking.Domain.Entities;
 
@@ -31,7 +32,9 @@ public partial class Company
 
     public DateTime? UpdatedDate { get; set; }
 
+    [JsonIgnore]
     public virtual ICollection<Contactperson> Contactpeople { get; set; } = new List<Contactperson>();
 
+    [JsonIgnore]
     public virtual ICollection<Visit> Visits { get; set; } = new List<Visit>();
 }

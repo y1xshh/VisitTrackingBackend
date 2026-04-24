@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
+using VisitTracking.Application.Constants;
 
 public class OutcomeTypeService : IOutcomeTypeService
 {
@@ -99,27 +100,25 @@ public class OutcomeTypeService : IOutcomeTypeService
             ActionBy = 1
         });
     }
+    public async Task<IEnumerable<object>> GetDropdownAsync()
+    {
+        var data = await _repo.GetAllAsync();
 
+        return data
+            .OrderBy(x => x.Id)
+            .Select((x, index) => new
+            {
+                value = x.Id,
+                code = $"O-{(index + 1).ToString("D2")}",
+                label = $"O-{(index + 1).ToString("D2")} - {x.OutcomeName}"
+
+            });
+    }
+           
     public async Task DeleteAsync(int id)
     {
-        var existingEntity = await _repo.GetByIdAsync(id);
-        if (existingEntity == null) return;
+        var data = await _repo.GetByIdAsync(id);
+        return;
 
-        var oldValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
-        {
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        }) ?? string.Empty;
-
-        await _repo.DeleteAsync(id);
-
-        await _auditService.CreateAsync(new AuditLogDto
-        {
-            TableName = "Outcometype",
-            RecordId = id,
-            ActionType = "DELETE",
-            OldValueJson = oldValueJson,
-            NewValueJson = string.Empty,
-            ActionBy = 1
-        });
     }
 }

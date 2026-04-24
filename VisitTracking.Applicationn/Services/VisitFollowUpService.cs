@@ -68,7 +68,7 @@ public class VisitFollowUpService : IVisitFollowUpService
             IsActive = dto.IsActive,
             InsertedDate = DateTime.Now
         };
-
+       
         if (dto.NextFollowUpDate == null && dto.FollowUpDate != null)
         {
             entity.NextFollowUpDate = dto.FollowUpDate.Value.AddDays(2);
@@ -78,7 +78,9 @@ public class VisitFollowUpService : IVisitFollowUpService
             entity.NextFollowUpDate = dto.NextFollowUpDate;
         }
 
-        if (dto.OutcomeTypeId == 1)
+        await _repo.AddAsync(entity);
+       
+        if (dto.OutcomeTypeId == 1) 
         {
             entity.ActualBusinessValue = dto.ExpectedBusinessValue;
         }
@@ -124,6 +126,7 @@ public class VisitFollowUpService : IVisitFollowUpService
         existingEntity.IsActive = dto.IsActive;
         existingEntity.UpdatedDate = DateTime.Now;
 
+        
         if (dto.NextFollowUpDate == null && dto.FollowUpDate != null)
         {
             existingEntity.NextFollowUpDate = dto.FollowUpDate.Value.AddDays(2);
@@ -133,14 +136,16 @@ public class VisitFollowUpService : IVisitFollowUpService
             existingEntity.NextFollowUpDate = dto.NextFollowUpDate;
         }
 
-        if (dto.OutcomeTypeId == 1)
-        {
-            existingEntity.ActualBusinessValue = dto.ExpectedBusinessValue;
-        }
-        else
-        {
-            existingEntity.ActualBusinessValue = dto.ActualBusinessValue;
-        }
+        await _repo.UpdateAsync(entity);
+   
+    if (dto.OutcomeTypeId == 1) 
+    {
+        entity.ActualBusinessValue = dto.ExpectedBusinessValue;
+    }
+    else
+    {
+        entity.ActualBusinessValue = dto.ActualBusinessValue;
+    }
 
         await _repo.UpdateAsync(existingEntity);
 

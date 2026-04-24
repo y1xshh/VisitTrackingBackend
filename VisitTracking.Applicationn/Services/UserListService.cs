@@ -35,7 +35,7 @@ namespace VisitTracking.Application.Services
                     DesignationId = user.DesignationId,
                     DepartmentId = user.DepartmentId,
 
-                    ManagerId = employee?.ReportingManagerId,   // ✅ FIXED (no casting)
+                    ManagerId = employee?.ReportingManagerId,   
                     LocationId = employee?.LocationId,
 
                     IsActive = user.IsActive
@@ -64,7 +64,7 @@ namespace VisitTracking.Application.Services
                     DesignationId = user.DesignationId,
                     DepartmentId = user.DepartmentId,
 
-                    ManagerId = employee?.ReportingManagerId,   // ✅ FIXED (no casting)
+                    ManagerId = employee?.ReportingManagerId,   
                     LocationId = employee?.LocationId,
 
                     IsActive = user.IsActive

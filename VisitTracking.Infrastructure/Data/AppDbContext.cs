@@ -12,43 +12,43 @@ public partial class AppDbContext : DbContext
     }
 
 
-    public virtual DbSet<Auditlog> Auditlogs { get; set; }
+    public virtual DbSet<Auditlog> Auditlogs { get; set; } = null!;
 
-    public virtual DbSet<Company> Companies { get; set; }
+    public virtual DbSet<Company> Companies { get; set; } = null!;
 
-    public virtual DbSet<Contactperson> Contactpersons { get; set; }
+    public virtual DbSet<Contactperson> Contactpersons { get; set; } = null!;
 
-    public virtual DbSet<Department> Departments { get; set; }
+    public virtual DbSet<Department> Departments { get; set; } = null!;
 
-    public virtual DbSet<Employee> Employees { get; set; }
+    public virtual DbSet<Employee> Employees { get; set; } = null!;
 
-    public virtual DbSet<Expenseapproval> Expenseapprovals { get; set; }
+    public virtual DbSet<Expenseapproval> Expenseapprovals { get; set; } = null!;
 
-    public virtual DbSet<Expenserate> Expenserates { get; set; }
+    public virtual DbSet<Expenserate> Expenserates { get; set; } = null!;
 
-    public virtual DbSet<Funnelstage> Funnelstages { get; set; }
+    public virtual DbSet<Funnelstage> Funnelstages { get; set; } = null!;
 
-    public virtual DbSet<MstDesignation> MstDesignations { get; set; }
+    public virtual DbSet<MstDesignation> MstDesignations { get; set; } = null!;
 
-    public virtual DbSet<MstLocation> MstLocations { get; set; }
+    public virtual DbSet<MstLocation> MstLocations { get; set; } = null!;
 
-    public virtual DbSet<Organisation> Organisations { get; set; }
+    public virtual DbSet<Organisation> Organisations { get; set; } = null!;
 
-    public virtual DbSet<Outcometype> Outcometypes { get; set; }
+    public virtual DbSet<Outcometype> Outcometypes { get; set; } = null!;
 
-    public virtual DbSet<Role> Roles { get; set; }
+    public virtual DbSet<Role> Roles { get; set; } = null!;
 
-    public virtual DbSet<User> Users { get; set; }
+    public virtual DbSet<User> Users { get; set; } = null!;
 
-    public virtual DbSet<Vehicletype> Vehicletypes { get; set; }
+    public virtual DbSet<Vehicletype> Vehicletypes { get; set; } = null!;
 
-    public virtual DbSet<Visit> Visits { get; set; }
+    public virtual DbSet<Visit> Visits { get; set; } = null!;
 
-    public virtual DbSet<Visitattachment> Visitattachments { get; set; }
+    public virtual DbSet<Visitattachment> Visitattachments { get; set; } = null!;
 
-    public virtual DbSet<Visitfollowup> Visitfollowups { get; set; }
+    public virtual DbSet<Visitfollowup> Visitfollowups { get; set; } = null!;
 
-    public virtual DbSet<Visitpurpose> Visitpurposes { get; set; }
+    public virtual DbSet<Visitpurpose> Visitpurposes { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseMySql("name=ConnectionStrings:DefaultConnection", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.45-mysql"));
@@ -74,7 +74,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.NewValueJson).HasColumnType("text");
             entity.Property(e => e.OldValueJson).HasColumnType("text");
@@ -107,7 +107,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.Pincode).HasMaxLength(10);
             entity.Property(e => e.State).HasMaxLength(100);
@@ -141,7 +141,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.Mobile).HasMaxLength(20);
             entity.Property(e => e.Name).HasMaxLength(150);
@@ -184,7 +184,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.UpdatedBy)
                 .HasMaxLength(50)
@@ -222,7 +222,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.UpdatedBy)
                 .HasMaxLength(50)
@@ -268,7 +268,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.SubmittedAt).HasColumnType("datetime");
             entity.Property(e => e.UpdatedBy)
@@ -300,7 +300,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.RatePerKm).HasPrecision(10, 2);
             entity.Property(e => e.UpdatedBy)
@@ -330,7 +330,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.StageName).HasMaxLength(150);
             entity.Property(e => e.UpdatedBy)
@@ -361,7 +361,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.UpdatedBy)
                 .HasMaxLength(50)
@@ -393,7 +393,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.LocationName).HasMaxLength(50);
             entity.Property(e => e.State).HasMaxLength(50);
@@ -424,7 +424,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.OrganisationName).HasMaxLength(200);
             entity.Property(e => e.State).HasMaxLength(100);
@@ -455,7 +455,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.OutcomeName).HasMaxLength(150);
             entity.Property(e => e.UpdatedBy)
@@ -481,7 +481,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.RoleName).HasMaxLength(100);
             entity.Property(e => e.UpdatedBy)
@@ -513,7 +513,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.IsFirstLogin)
                 .IsRequired()
@@ -548,7 +548,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("inserted_date");
             entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
+                .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.UpdatedBy)
                 .HasMaxLength(50)
@@ -567,8 +567,14 @@ public partial class AppDbContext : DbContext
             entity.ToTable("visits");
 
             entity.HasIndex(e => e.CompanyId, "CompanyId");
-
+            entity.HasIndex(e => e.ContactPersonId, "ContactPersonId");
+            entity.HasIndex(e => e.DepartmentId, "DepartmentId");
             entity.HasIndex(e => e.EmployeeId, "EmployeeId");
+            entity.HasIndex(e => e.FunnelStageId, "FunnelStageId");
+            entity.HasIndex(e => e.OrganisationId, "OrganisationId");
+            entity.HasIndex(e => e.OutcomeTypeId, "OutcomeTypeId");
+            entity.HasIndex(e => e.VehicleTypeId, "VehicleTypeId");
+            entity.HasIndex(e => e.VisitPurposeId, "VisitPurposeId");
 
             entity.Property(e => e.ActualBusinessValue).HasPrecision(18, 2);
             entity.Property(e => e.AttachmentPath).HasMaxLength(255);
@@ -612,6 +618,34 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.Employee).WithMany(p => p.Visits)
                 .HasForeignKey(d => d.EmployeeId)
                 .HasConstraintName("visits_ibfk_1");
+
+            entity.HasOne<Organisation>().WithMany()
+                .HasForeignKey(d => d.OrganisationId)
+                .HasConstraintName("visits_ibfk_3");
+
+            entity.HasOne<Department>().WithMany()
+                .HasForeignKey(d => d.DepartmentId)
+                .HasConstraintName("visits_ibfk_4");
+
+            entity.HasOne<Contactperson>().WithMany()
+                .HasForeignKey(d => d.ContactPersonId)
+                .HasConstraintName("visits_ibfk_5");
+
+            entity.HasOne<Visitpurpose>().WithMany()
+                .HasForeignKey(d => d.VisitPurposeId)
+                .HasConstraintName("visits_ibfk_6");
+
+            entity.HasOne<Vehicletype>().WithMany()
+                .HasForeignKey(d => d.VehicleTypeId)
+                .HasConstraintName("visits_ibfk_7");
+
+            entity.HasOne<Funnelstage>().WithMany()
+                .HasForeignKey(d => d.FunnelStageId)
+                .HasConstraintName("visits_ibfk_8");
+
+            entity.HasOne<Outcometype>().WithMany()
+                .HasForeignKey(d => d.OutcomeTypeId)
+                .HasConstraintName("visits_ibfk_9");
         });
 
         modelBuilder.Entity<Visitattachment>(entity =>

@@ -14,7 +14,6 @@ public class CompanyRepository : ICompanyRepository
         _context = context;
     }
 
-    // ✅ GET ALL
     public async Task<List<Company>> GetAllAsync()
     {
         return await _context.Companies
@@ -22,14 +21,12 @@ public class CompanyRepository : ICompanyRepository
             .ToListAsync();
     }
 
-    // ✅ GET BY ID
     public async Task<Company?> GetByIdAsync(int id)
     {
         var entity = await _context.Companies.FindAsync(id);
         return entity;
     }
 
-    // ✅ CREATE
     public async Task AddAsync(Company entity)
     {
         entity.InsertedDate = DateTime.UtcNow;
@@ -39,7 +36,7 @@ public class CompanyRepository : ICompanyRepository
         await _context.SaveChangesAsync();
     }
 
-    // ✅ UPDATE
+
     public async Task UpdateAsync(Company entity)
     {
         entity.UpdatedDate = DateTime.UtcNow;
@@ -48,7 +45,7 @@ public class CompanyRepository : ICompanyRepository
         await _context.SaveChangesAsync();
     }
 
-    // ✅ DELETE
+
     public async Task DeleteAsync(int id)
     {
         var data = await _context.Companies.FindAsync(id);

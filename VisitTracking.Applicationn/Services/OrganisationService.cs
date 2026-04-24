@@ -119,12 +119,7 @@ public class OrganisationService : IOrganisationService
         var entity = await _repository.GetByIdAsync(id);
         if (entity == null) return;
 
-        var oldValueJson = JsonConvert.SerializeObject(entity, new JsonSerializerSettings
-        {
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        }) ?? string.Empty;
-
-        entity.IsActive = false;
+        entity.IsActive = false; 
         entity.UpdatedDate = DateTime.UtcNow;
 
         await _repository.UpdateAsync(entity);

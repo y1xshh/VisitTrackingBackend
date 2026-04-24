@@ -18,7 +18,7 @@ public class OrganisationRepository : IOrganisationRepository
     {
         return await _context.Organisations
             .Where(x => x.IsActive == true)
-            .Include(x => x.Company)       // ✅ correct
+            .Include(x => x.Company)       
             .ToListAsync();
     }
 

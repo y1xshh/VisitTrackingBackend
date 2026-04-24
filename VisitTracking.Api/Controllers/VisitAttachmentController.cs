@@ -22,7 +22,7 @@ namespace VisitTracking.Api.Controllers
 
             var fileName = Path.GetFileName(file.FileName);
 
-            // 📁 Folder create (if not exists)
+           
             var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
 
             if (!Directory.Exists(folderPath))
@@ -32,13 +32,13 @@ namespace VisitTracking.Api.Controllers
 
             var filePath = Path.Combine(folderPath, fileName);
 
-            // 💾 Save file
+            
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
 
-            // 📦 Save in DB
+      
             var dto = new VisitAttachmentDto
             {
                 VisitId = visitId,

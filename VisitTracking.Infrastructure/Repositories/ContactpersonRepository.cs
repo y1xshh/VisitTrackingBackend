@@ -12,6 +12,7 @@ public class ContactpersonRepository : IContactpersonRepository
         _context = context;
     }
 
+
     public async Task<List<Contactperson>> GetAllAsync()
     {
         return await _context.Contactpersons
@@ -21,7 +22,8 @@ public class ContactpersonRepository : IContactpersonRepository
             .ToListAsync();
     }
 
-    public async Task<Contactperson?> GetByIdAsync(int id)
+
+    public async Task<Contactperson> GetByIdAsync(int id)
     {
         return await _context.Contactpersons
             .Include(x => x.Company)

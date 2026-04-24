@@ -16,12 +16,18 @@ namespace VisitTracking.Infrastructure.Repositories
 
         public async Task<List<Visit>> GetAllAsync()
         {
-            return await _context.Visits.ToListAsync();
+            return await _context.Visits
+                .Include(v => v.Company)
+                .Include(v => v.Employee)
+                .ToListAsync();
         }
 
         public async Task<Visit?> GetByIdAsync(int id)
         {
-            return await _context.Visits.FindAsync(id);
+            return await _context.Visits
+                .Include(v => v.Company)
+                .Include(v => v.Employee)
+                .FirstOrDefaultAsync(v => v.Id == id);
         }
 
         public async Task AddAsync(Visit entity)

@@ -16,12 +16,18 @@ namespace VisitTracking.Infrastructure.Repositories
 
         public async Task<IEnumerable<Expenserate>> GetAllAsync()
         {
-            return await _context.Expenserates.ToListAsync();
+          var data = await _context.Expenserates.ToListAsync();
+            return data;
         }
 
         public async Task<Expenserate?> GetByIdAsync(int id)
         {
-            return await _context.Expenserates.FindAsync(id);
+          var data = await _context.Expenserates.FindAsync(id);
+            if (data == null)
+            {
+                throw new KeyNotFoundException($"Expenserate with id {id} not found.");
+            }
+                        return data;
         }
 
         public async Task AddAsync(Expenserate entity)
@@ -43,6 +49,10 @@ namespace VisitTracking.Infrastructure.Repositories
             {
                 _context.Expenserates.Remove(data);
                 await _context.SaveChangesAsync();
+            }
+            else
+            {
+                throw new KeyNotFoundException($"Expenserate with id {id} not found.");
             }
         }
     }

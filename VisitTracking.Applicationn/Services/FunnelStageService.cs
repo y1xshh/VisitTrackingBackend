@@ -9,7 +9,9 @@ public class FunnelStageService : IFunnelStageService
     private readonly IFunnelStageRepository _repo;
     private readonly IAuditLogService _auditService;
 
-    public FunnelStageService(IFunnelStageRepository repo, IAuditLogService auditLogService)
+    private static bool? NormalizeStageFlag(bool? value) => value == true ? true : null;
+
+    public FunnelStageService(IFunnelStageRepository repo)
     {
         _repo = repo;
         _auditService = auditLogService;
@@ -19,10 +21,13 @@ public class FunnelStageService : IFunnelStageService
     {
         var data = await _repo.GetAllAsync();
 
-        return data.Select(x => new FunnelStageDto
-        {
+          return data
+      .OrderBy(x => x.StageOrder)
+      .Select(static x => new FunnelStageDto
+   {
             Id = x.Id,
             StageName = x.StageName,
+            Stagecode = $"F-{(x.StageOrder ?? 0).ToString("D2")}",
             StageOrder = x.StageOrder,
             IsClosedStage = x.IsClosedStage,
             IsWonStage = x.IsWonStage,
@@ -34,12 +39,12 @@ public class FunnelStageService : IFunnelStageService
     public async Task<FunnelStageDto?> GetByIdAsync(int id)
     {
         var x = await _repo.GetByIdAsync(id);
-
         if (x == null) return null;
 
         return new FunnelStageDto
         {
             Id = x.Id,
+            Stagecode = $"F-{(x.StageOrder ?? 0).ToString("D2")}",
             StageName = x.StageName,
             StageOrder = x.StageOrder,
             IsClosedStage = x.IsClosedStage,
@@ -51,13 +56,17 @@ public class FunnelStageService : IFunnelStageService
 
     public async Task CreateAsync(FunnelStageDto dto)
     {
+        var all = await _repo.GetAllAsync();
+
+        int nextOrder = (all.Max(x => x.StageOrder) ?? 0) + 1;
+
         var entity = new Funnelstage
         {
             StageName = dto.StageName,
-            StageOrder = dto.StageOrder,
-            IsClosedStage = dto.IsClosedStage,
-            IsWonStage = dto.IsWonStage,
-            IsLostStage = dto.IsLostStage,
+            StageOrder = nextOrder, // auto assign
+            IsClosedStage = NormalizeStageFlag(dto.IsClosedStage),
+            IsWonStage = NormalizeStageFlag(dto.IsWonStage),
+            IsLostStage = NormalizeStageFlag(dto.IsLostStage),
             IsActive = dto.IsActive,
             InsertedDate = DateTime.Now
         };
@@ -78,6 +87,11 @@ public class FunnelStageService : IFunnelStageService
         });
     }
 
+    private static int? NewMethod(IEnumerable<Funnelstage> all)
+    {
+        return all.Max(x => x.StageOrder);
+    }
+
     public async Task UpdateAsync(FunnelStageDto dto)
     {
         var existingEntity = await _repo.GetByIdAsync(dto.Id);
@@ -85,18 +99,16 @@ public class FunnelStageService : IFunnelStageService
 
         var oldValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
         {
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        });
+            Id = dto.Id,
+            StageName = dto.StageName,
 
-        existingEntity.StageName = dto.StageName;
-        existingEntity.StageOrder = dto.StageOrder;
-        existingEntity.IsClosedStage = dto.IsClosedStage;
-        existingEntity.IsWonStage = dto.IsWonStage;
-        existingEntity.IsLostStage = dto.IsLostStage;
-        existingEntity.IsActive = dto.IsActive;
-        existingEntity.UpdatedDate = DateTime.Now;
-
-        await _repo.UpdateAsync(existingEntity);
+            StageOrder = dto.StageOrder,
+            IsClosedStage = NormalizeStageFlag(dto.IsClosedStage),
+            IsWonStage = NormalizeStageFlag(dto.IsWonStage),
+            IsLostStage = NormalizeStageFlag(dto.IsLostStage),
+            IsActive = dto.IsActive,
+            UpdatedDate = DateTime.Now
+        };
 
         await _auditService.CreateAsync(new AuditLogDto
         {
@@ -111,27 +123,23 @@ public class FunnelStageService : IFunnelStageService
             ActionBy = 1
         });
     }
+    public async Task<IEnumerable<object>> GetDropdownAsync()
+    {
+        var data = await _repo.GetAllAsync();
 
+        return data
+            .OrderBy(x => x.StageOrder)
+            .Select(x => new
+            {
+                value = x.Id,
+                code = $"F-{(x.StageOrder ?? 0).ToString("D2")}",
+                label = $"F-{(x.StageOrder ?? 0).ToString("D2")} - {x.StageName}"
+            });
+    }
     public async Task DeleteAsync(int id)
     {
-        var existingEntity = await _repo.GetByIdAsync(id);
-        if (existingEntity == null) return;
+        var entity = await _repo.GetByIdAsync(id);
 
-        var oldValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
-        {
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        });
 
-        await _repo.DeleteAsync(id);
-
-        await _auditService.CreateAsync(new AuditLogDto
-        {
-            TableName = "Funnelstage",
-            RecordId = id,
-            ActionType = "DELETE",
-            OldValueJson = oldValueJson,
-            NewValueJson = null,
-            ActionBy = 1
-        });
     }
 }

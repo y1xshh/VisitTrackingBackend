@@ -28,7 +28,7 @@ namespace VisitTracking.Api.Controllers
             return Ok("Submitted for Approval");
         }
 
-        // 🔥 APPROVE API
+       
         [HttpPost("approve/{id}")]
         public async Task<IActionResult> Approve(int id, int approvedBy, string? remarks)
         {
@@ -36,7 +36,7 @@ namespace VisitTracking.Api.Controllers
             return Ok("Approved");
         }
 
-        // 🔥 REJECT API
+        
         [HttpPost("reject/{id}")]
         public async Task<IActionResult> Reject(int id, int approvedBy, string? remarks)
         {
