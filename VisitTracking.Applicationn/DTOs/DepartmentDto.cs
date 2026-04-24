@@ -2,7 +2,7 @@
 {
     public class DepartmentDto
     {
-        public string DepartmentName { get; set; }
+        public string? DepartmentName { get; set; }
         public int OrganisationId { get; set; }
     }
 }

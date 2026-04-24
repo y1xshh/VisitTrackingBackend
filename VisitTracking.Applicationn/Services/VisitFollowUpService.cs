@@ -65,7 +65,7 @@ public class VisitFollowUpService : IVisitFollowUpService
             IsActive = dto.IsActive,
             InsertedDate = DateTime.Now
         };
-        // 🔥 AUTO NEXT FOLLOW-UP LOGIC HERE
+       
         if (dto.NextFollowUpDate == null && dto.FollowUpDate != null)
         {
             entity.NextFollowUpDate = dto.FollowUpDate.Value.AddDays(2);
@@ -76,8 +76,8 @@ public class VisitFollowUpService : IVisitFollowUpService
         }
 
         await _repo.AddAsync(entity);
-        // 🔥 WON LOGIC HERE
-        if (dto.OutcomeTypeId == 1) // 👈 WON ID (change as per DB)
+       
+        if (dto.OutcomeTypeId == 1) 
         {
             entity.ActualBusinessValue = dto.ExpectedBusinessValue;
         }
@@ -105,7 +105,7 @@ public class VisitFollowUpService : IVisitFollowUpService
             UpdatedDate = DateTime.Now
         };
 
-        // 🔥 SAME LOGIC
+        
         if (dto.NextFollowUpDate == null && dto.FollowUpDate != null)
         {
             entity.NextFollowUpDate = dto.FollowUpDate.Value.AddDays(2);
@@ -116,8 +116,8 @@ public class VisitFollowUpService : IVisitFollowUpService
         }
 
         await _repo.UpdateAsync(entity);
-    // 🔥 SAME LOGIC
-    if (dto.OutcomeTypeId == 1) // WON
+   
+    if (dto.OutcomeTypeId == 1) 
     {
         entity.ActualBusinessValue = dto.ExpectedBusinessValue;
     }

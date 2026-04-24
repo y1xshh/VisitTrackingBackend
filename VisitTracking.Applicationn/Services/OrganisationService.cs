@@ -85,7 +85,7 @@ public class OrganisationService : IOrganisationService
         var entity = await _repository.GetByIdAsync(id);
         if (entity == null) return;
 
-        entity.IsActive = false; // ✅ soft delete
+        entity.IsActive = false; 
         entity.UpdatedDate = DateTime.UtcNow;
 
         await _repository.UpdateAsync(entity);

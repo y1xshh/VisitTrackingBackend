@@ -81,7 +81,7 @@ namespace VisitTracking.Application.Services
                 };
             }
 
-            // ✅ Check first login
+             //✅ Check first login
             if ((bool)user.IsFirstLogin)
             {
                 return new LoginResponseDto
@@ -228,8 +228,6 @@ namespace VisitTracking.Application.Services
                 await _context.Users.AddAsync(user);
                 await _context.SaveChangesAsync();
 
-                //Console.WriteLine($"Incoming ReportingManagerId: {dto.ReportingManagerId}");
-
                 // ✅ VALIDATE REPORTING MANAGER (FROM EMPLOYEE TABLE)
                 if (dto.ReportingManagerId.HasValue)
                 {
@@ -253,22 +251,18 @@ namespace VisitTracking.Application.Services
 
                     DesignationId = dto.DesignationId > 0 ? dto.DesignationId : null,
 
-                    ReportingManagerId = dto.ReportingManagerId, // FK to Employee.Id
+                    ReportingManagerId = dto.ReportingManagerId, 
                     LocationId = dto.LocationId,
 
 
                 };
 
                 await _context.Set<Employee>().AddAsync(employee);
-                await _context.SaveChangesAsync();
-
-                // ✅ OPTIONAL: SELF MANAGER CHECK (EXTRA SAFETY)
+                await _context.SaveChangesAsync();     
                 if (employee.ReportingManagerId == employee.Id)
                 {
                     throw new Exception("Employee cannot be their own manager");
                 }
-
-                // ✅ SEND EMAIL
                 var body = EmpRegEmailTemplate.Build(
                     user.FullName,
                     user.Email,
@@ -280,8 +274,6 @@ namespace VisitTracking.Application.Services
                     "Employee Account Created",
                     body
                 );
-
-                // ✅ COMMIT
                 await transaction.CommitAsync();
             }
             catch (Exception ex)
@@ -305,10 +297,8 @@ namespace VisitTracking.Application.Services
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
             user.IsFirstLogin = false;
-
-            // ✅ Update DB
             _context.Users.Update(user);
-            await _context.SaveChangesAsync(); // 🔑 This is mandatory
+            await _context.SaveChangesAsync(); 
 
             return "Password changed successfully";
         }
@@ -341,7 +331,6 @@ namespace VisitTracking.Application.Services
                 FullName = dto.FullName,
                 Email = dto.Email,
                 Mobile = dto.Mobile,
-                //PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.HashPassword)
             };
             return _repo.AddAsync(user);
         }

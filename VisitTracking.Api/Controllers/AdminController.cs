@@ -8,7 +8,7 @@ namespace VisitTracking.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
 
-    [Authorize] 
+  
     public class AdminController : ControllerBase
     {
         private readonly IAuthService _authService;

@@ -14,12 +14,8 @@
             public string? Designation { get; set; }
             public string? Mobile { get; set; }
             public string? Email { get; set; }
-
-            // ✅ FIXED FIELDS
             public string? Remark { get; set; }
             public bool IsActive { get; set; }
-
-            // ✅ DISPLAY FIELDS (for join data)
             public string? CompanyName { get; set; }
             public string? DepartmentName { get; set; }
             public string? OrganisationName { get; set; }

@@ -1,5 +1,6 @@
 ﻿using VisitTracking.Application.DTOs;
 using VisitTracking.Domain.Entities;
+using VisitTracking.Application.Constants;
 
 public class OutcomeTypeService : IOutcomeTypeService
 {
@@ -63,9 +64,25 @@ public class OutcomeTypeService : IOutcomeTypeService
 
         await _repo.UpdateAsync(entity);
     }
+    public async Task<IEnumerable<object>> GetDropdownAsync()
+    {
+        var data = await _repo.GetAllAsync();
 
+        return data
+            .OrderBy(x => x.Id)
+            .Select((x, index) => new
+            {
+                value = x.Id,
+                code = $"O-{(index + 1).ToString("D2")}",
+                label = $"O-{(index + 1).ToString("D2")} - {x.OutcomeName}"
+
+            });
+    }
+           
     public async Task DeleteAsync(int id)
     {
-        await _repo.DeleteAsync(id);
+        var data = await _repo.GetByIdAsync(id);
+        return;
+
     }
 }

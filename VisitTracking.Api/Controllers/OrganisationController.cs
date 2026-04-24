@@ -13,7 +13,7 @@ public class OrganisationController : ControllerBase
         _service = service;
     }
 
-    // ✅ GET ALL
+    
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -21,7 +21,7 @@ public class OrganisationController : ControllerBase
         return Ok(result);
     }
 
-    // ✅ GET BY ID
+    
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(int id)
     {
@@ -33,7 +33,7 @@ public class OrganisationController : ControllerBase
         return Ok(data);
     }
 
-    // ✅ CREATE (FIXED DTO)
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] OrganisationDto dto)
     {
@@ -41,7 +41,6 @@ public class OrganisationController : ControllerBase
         return Ok(new { message = "Organisation created successfully" });
     }
 
-    // ✅ UPDATE (FIXED DTO)
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] OrganisationDto dto)
     {
@@ -49,7 +48,7 @@ public class OrganisationController : ControllerBase
         return Ok(new { message = "Updated successfully" });
     }
 
-    // ✅ DELETE
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

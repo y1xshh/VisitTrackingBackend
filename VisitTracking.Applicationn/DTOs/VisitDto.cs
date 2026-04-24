@@ -15,30 +15,22 @@
         public string? DiscussionSummary { get; set; }
         public string? NextAction { get; set; }
         public DateTime? NextFollowUpDate { get; set; }
-
         public int VehicleTypeId { get; set; }
         public decimal? DistanceKm { get; set; }
         public decimal? RateAppliedPerKm { get; set; }
         public decimal? TravelExpenseAmount { get; set; }
-
         public int FunnelStageId { get; set; }
         public int OutcomeTypeId { get; set; }
-
         public decimal? ExpectedBusinessValue { get; set; }
         public decimal? ActualBusinessValue { get; set; }
         public decimal? ProbabilityPercent { get; set; }
-
         public string? Status { get; set; }
-
         public DateTime? CheckInTime { get; set; }
         public DateTime? CheckOutTime { get; set; }
-
         public string? Latitude { get; set; }
         public string? Longitude { get; set; }
-
         public string? Remarks { get; set; }
         public string? AttachmentPath { get; set; }
-
         public int InsertedBy { get; set; }
         public DateTime InsertedDate { get; set; }
         public int? UpdatedBy { get; set; }

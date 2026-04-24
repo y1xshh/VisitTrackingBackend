@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace VisitTracking.Domain.Entities;
+﻿namespace VisitTracking.Domain.Entities;
 
 public partial class Funnelstage
 {

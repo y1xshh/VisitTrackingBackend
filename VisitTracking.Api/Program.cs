@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Text.Json.Serialization;
 using VisitTracking.Application.Filter;
 using VisitTracking.Application.Interface;
 using VisitTracking.Application.Interfaces;
@@ -14,7 +14,7 @@ using VisitTracking.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ✅ DB
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -22,7 +22,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
-// ✅ Services & Repositories
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -67,7 +66,6 @@ builder.Services.AddScoped<ILocationRepository, LocationRepository>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// ✅ JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options =>
 {
@@ -87,11 +85,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// ✅ Controllers
-builder.Services.AddControllers();
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
 builder.Services.AddEndpointsApiExplorer();
 
-// ✅ Swagger with Authorize Button
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -99,34 +101,9 @@ builder.Services.AddSwaggerGen(options =>
         Title = "VisitTracking API",
         Version = "v1"
     });
-
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter 'Bearer {your token}'"
-    });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            new string[] {}
-        }
-    });
 });
 
-// ✅ CORS
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocalhost", policy =>
@@ -140,7 +117,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// ✅ Middleware pipeline
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -148,7 +125,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
-
 app.UseCors("AllowLocalhost");
 
 if (!app.Environment.IsDevelopment())

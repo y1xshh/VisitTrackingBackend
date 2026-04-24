@@ -23,7 +23,6 @@
                                 </body>
                             </html>";
 
-            // ✅ REPLACE PLACEHOLDERS
             template = template.Replace("{EmpName}", empName);
             template = template.Replace("{EmpEmail}", empEmail);
             template = template.Replace("{EmpPassword}", empPassword);

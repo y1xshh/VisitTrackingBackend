@@ -4,7 +4,6 @@ namespace VisitTracking.Application.DTOs
 {
     public class EmployeeUserDto
     {
-        // USER
         [Required]
         public string FullName { get; set; } = null!;
 
@@ -21,8 +20,6 @@ namespace VisitTracking.Application.DTOs
 
         [Required]
         public int DepartmentId { get; set; }
-
-        // EMPLOYEE
         public string? EmployeeCode { get; set; }
         public int? DesignationId { get; set; }
         public int? ReportingManagerId { get; set; }

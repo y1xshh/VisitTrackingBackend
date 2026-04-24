@@ -68,7 +68,7 @@ namespace VisitTracking.Application.Services
             };
         }
 
-        // ✅ CREATE
+       
         public async Task Create(ContactpersonDto dto)
         {
             var entity = new Contactperson
@@ -84,14 +84,14 @@ namespace VisitTracking.Application.Services
                 Remarks = dto.Remark,
                 IsActive = dto.IsActive,
 
-                InsertedBy = "system", // 🔥 later replace with logged-in user
+                InsertedBy = "system", 
                 InsertedDate = DateTime.UtcNow
             };
 
             await _repository.AddAsync(entity);
         }
 
-        // ✅ UPDATE
+  
         public async Task UpdateAsync(int id, ContactpersonDto dto)
         {
             var data = await _repository.GetByIdAsync(id);
@@ -110,13 +110,13 @@ namespace VisitTracking.Application.Services
             data.Remarks = dto.Remark;
             data.IsActive = dto.IsActive;
 
-            data.UpdatedBy = "system"; // 🔥 later replace with logged-in user
+            data.UpdatedBy = "system"; 
             data.UpdatedDate = DateTime.UtcNow;
 
             await _repository.UpdateAsync(data);
         }
 
-        // ✅ DELETE (Soft Delete Recommended)
+       
         public async Task DeleteAsync(int id)
         {
             var entity = await _repository.GetByIdAsync(id);
@@ -124,14 +124,13 @@ namespace VisitTracking.Application.Services
             if (entity == null)
                 throw new Exception("Contact person not found");
 
-            // 🔥 Soft delete
+          
             entity.IsActive = false;
             entity.UpdatedDate = DateTime.UtcNow;
 
             await _repository.UpdateAsync(entity);
         }
 
-        // ✅ GET BY EMAIL
         public async Task<ContactpersonDto?> GetByEmailAsync(string email)
         {
             var data = await _repository.GetAllAsync();

@@ -1,19 +1,26 @@
-﻿using VisitTracking.Application.DTOs;
+﻿using Microsoft.EntityFrameworkCore;
+using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
+using VisitTracking.Infrastructure.Data;
 
 namespace VisitTracking.Application.Services
 {
     public class VisitService : IVisitService
     {
         private readonly IVisitRepository _repository;
-        private readonly IVehicleTypeRepository _vehicleRepo; // <-- Add this line
+        private readonly IVehicleTypeRepository _vehicleRepo;
+        private readonly AppDbContext _context;
 
-        public VisitService(IVisitRepository repository, IVehicleTypeRepository vehicleRepo) // <-- Update constructor
+        public VisitService(
+            IVisitRepository repository,
+            IVehicleTypeRepository vehicleRepo,
+            AppDbContext context)
         {
             _repository = repository;
-            _vehicleRepo = vehicleRepo; // <-- Assign injected dependency
+            _vehicleRepo = vehicleRepo;
+            _context = context;
         }
 
         public async Task<List<Visit>> GetAllAsync()
@@ -28,23 +35,60 @@ namespace VisitTracking.Application.Services
 
         public async Task Create(VisitDto dto)
         {
+         
+
+            if (!await _context.Employees.AnyAsync(x => x.Id == dto.EmployeeId))
+                throw new Exception("Invalid EmployeeId");
+
+            if (!await _context.Companies.AnyAsync(x => x.Id == dto.CompanyId))
+                throw new Exception("Invalid CompanyId");
+
+            if (!await _context.Organisations.AnyAsync(x => x.Id == dto.OrganisationId))
+                throw new Exception("Invalid OrganisationId");
+
+            if (!await _context.Departments.AnyAsync(x => x.Id == dto.DepartmentId))
+                throw new Exception("Invalid DepartmentId");
+
+            if (!await _context.Contactpersons.AnyAsync(x => x.Id == dto.ContactPersonId))
+                throw new Exception("Invalid ContactPersonId");
+
+            if (!await _context.Visitpurposes.AnyAsync(x => x.Id == dto.VisitPurposeId))
+                throw new Exception("Invalid VisitPurposeId");
+
+            if (!await _context.Vehicletypes.AnyAsync(x => x.Id == dto.VehicleTypeId))
+                throw new Exception("Invalid VehicleTypeId");
+
+            if (!await _context.Funnelstages.AnyAsync(x => x.Id == dto.FunnelStageId))
+                throw new Exception("Invalid FunnelStageId");
+
+            if (!await _context.Outcometypes.AnyAsync(x => x.Id == dto.OutcomeTypeId))
+                throw new Exception("Invalid OutcomeTypeId");
+
+            if (!await _context.Users.AnyAsync(x => x.Id == dto.InsertedBy))
+                throw new Exception("Invalid InsertedBy");
+
+
+           
             decimal? rate = dto.RateAppliedPerKm;
 
-            // 👉 Agar rate nahi diya to VehicleType se uthao
             if (rate == null || rate == 0)
             {
                 var vehicle = await _vehicleRepo.GetByIdAsync(dto.VehicleTypeId);
                 rate = vehicle?.DefaultRatePerKm;
             }
 
-            // 👉 Expense calculate
+       
             decimal? expense = null;
-
             if (dto.DistanceKm != null && rate != null)
             {
                 expense = dto.DistanceKm * rate;
             }
 
+           
+            decimal? latitude = decimal.TryParse(dto.Latitude, out var lat) ? lat : null;
+            decimal? longitude = decimal.TryParse(dto.Longitude, out var lng) ? lng : null;
+
+        
             var entity = new Visit
             {
                 VisitCode = dto.VisitCode,
@@ -63,31 +107,34 @@ namespace VisitTracking.Application.Services
 
                 VehicleTypeId = dto.VehicleTypeId,
                 DistanceKm = dto.DistanceKm,
-                RateAppliedPerKm = rate,                  // ✅ auto filled
-                TravelExpenseAmount = expense,            // ✅ auto calculated
+                RateAppliedPerKm = rate,
+                TravelExpenseAmount = expense,
 
                 FunnelStageId = dto.FunnelStageId,
                 OutcomeTypeId = dto.OutcomeTypeId,
 
                 ExpectedBusinessValue = dto.ExpectedBusinessValue,
                 ActualBusinessValue = dto.ActualBusinessValue,
-                ProbabilityPercent = (int?)dto.ProbabilityPercent,
+                ProbabilityPercent = dto.ProbabilityPercent != null
+                    ? (int?)dto.ProbabilityPercent
+                    : null,
 
                 Status = dto.Status,
                 CheckInTime = dto.CheckInTime,
                 CheckOutTime = dto.CheckOutTime,
 
-                Latitude = !string.IsNullOrWhiteSpace(dto.Latitude) ? decimal.Parse(dto.Latitude) : (decimal?)null,
-                Longitude = !string.IsNullOrWhiteSpace(dto.Longitude) ? decimal.Parse(dto.Longitude) : (decimal?)null,
+                Latitude = latitude,
+                Longitude = longitude,
 
                 Remarks = dto.Remarks,
                 AttachmentPath = dto.AttachmentPath,
 
+                // ✅ IMPORTANT: DB expects string
                 InsertedBy = dto.InsertedBy.ToString(),
                 InsertedDate = DateTime.UtcNow,
-                UpdatedBy = dto.UpdatedBy?.ToString(), // <-- Fix: convert int? to string
-                UpdatedDate = dto.UpdatedDate,
-               
+
+                UpdatedBy = dto.UpdatedBy?.ToString(),
+                UpdatedDate = dto.UpdatedDate
             };
 
             await _repository.AddAsync(entity);
@@ -98,8 +145,81 @@ namespace VisitTracking.Application.Services
             var data = await _repository.GetByIdAsync(id);
             if (data == null) return;
 
+            if (!await _context.Employees.AnyAsync(x => x.Id == dto.EmployeeId))
+                throw new Exception("Invalid EmployeeId");
+
+            if (!await _context.Companies.AnyAsync(x => x.Id == dto.CompanyId))
+                throw new Exception("Invalid CompanyId");
+
+            if (!await _context.Organisations.AnyAsync(x => x.Id == dto.OrganisationId))
+                throw new Exception("Invalid OrganisationId");
+
+            if (!await _context.Departments.AnyAsync(x => x.Id == dto.DepartmentId))
+                throw new Exception("Invalid DepartmentId");
+
+            if (!await _context.Contactpersons.AnyAsync(x => x.Id == dto.ContactPersonId))
+                throw new Exception("Invalid ContactPersonId");
+
+            if (!await _context.Visitpurposes.AnyAsync(x => x.Id == dto.VisitPurposeId))
+                throw new Exception("Invalid VisitPurposeId");
+
+            if (!await _context.Vehicletypes.AnyAsync(x => x.Id == dto.VehicleTypeId))
+                throw new Exception("Invalid VehicleTypeId");
+
+            if (!await _context.Funnelstages.AnyAsync(x => x.Id == dto.FunnelStageId))
+                throw new Exception("Invalid FunnelStageId");
+
+            if (!await _context.Outcometypes.AnyAsync(x => x.Id == dto.OutcomeTypeId))
+                throw new Exception("Invalid OutcomeTypeId");
+
+            decimal? rate = dto.RateAppliedPerKm;
+
+            if (rate == null || rate == 0)
+            {
+                var vehicle = await _vehicleRepo.GetByIdAsync(dto.VehicleTypeId);
+                rate = vehicle?.DefaultRatePerKm;
+            }
+
+            decimal? expense = null;
+            if (dto.DistanceKm != null && rate != null)
+            {
+                expense = dto.DistanceKm * rate;
+            }
+
+            decimal? latitude = decimal.TryParse(dto.Latitude, out var lat) ? lat : null;
+            decimal? longitude = decimal.TryParse(dto.Longitude, out var lng) ? lng : null;
+
+            data.VisitCode = dto.VisitCode;
+            data.VisitDate = dto.VisitDate;
+            data.EmployeeId = dto.EmployeeId;
+            data.CompanyId = dto.CompanyId;
+            data.OrganisationId = dto.OrganisationId;
+            data.DepartmentId = dto.DepartmentId;
+            data.ContactPersonId = dto.ContactPersonId;
+            data.VisitPurposeId = dto.VisitPurposeId;
+            data.DiscussionSummary = dto.DiscussionSummary;
+            data.NextAction = dto.NextAction;
+            data.NextFollowUpDate = dto.NextFollowUpDate;
+            data.VehicleTypeId = dto.VehicleTypeId;
+            data.DistanceKm = dto.DistanceKm;
+            data.RateAppliedPerKm = rate;
+            data.TravelExpenseAmount = expense;
+            data.FunnelStageId = dto.FunnelStageId;
+            data.OutcomeTypeId = dto.OutcomeTypeId;
+            data.ExpectedBusinessValue = dto.ExpectedBusinessValue;
+            data.ActualBusinessValue = dto.ActualBusinessValue;
+            data.ProbabilityPercent = dto.ProbabilityPercent != null
+                ? (int?)dto.ProbabilityPercent
+                : null;
             data.Status = dto.Status;
-            data.UpdatedDate = DateTime.UtcNow; // Set the update timestamp
+            data.CheckInTime = dto.CheckInTime;
+            data.CheckOutTime = dto.CheckOutTime;
+            data.Latitude = latitude;
+            data.Longitude = longitude;
+            data.Remarks = dto.Remarks;
+            data.AttachmentPath = dto.AttachmentPath;
+            data.UpdatedBy = dto.UpdatedBy?.ToString();
+            data.UpdatedDate = DateTime.UtcNow;
 
             await _repository.UpdateAsync(data);
         }
@@ -107,6 +227,7 @@ namespace VisitTracking.Application.Services
         public async Task DeleteAsync(int id)
         {
             await _repository.DeleteAsync(id);
+
         }
     }
 }

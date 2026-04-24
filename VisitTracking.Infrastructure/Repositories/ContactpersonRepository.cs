@@ -12,7 +12,7 @@ public class ContactpersonRepository : IContactpersonRepository
         _context = context;
     }
 
-    // ✅ FIXED GET ALL
+
     public async Task<List<Contactperson>> GetAllAsync()
     {
         return await _context.Contactpersons
@@ -22,7 +22,7 @@ public class ContactpersonRepository : IContactpersonRepository
             .ToListAsync();
     }
 
-    // ✅ FIXED GET BY ID
+
     public async Task<Contactperson> GetByIdAsync(int id)
     {
         return await _context.Contactpersons

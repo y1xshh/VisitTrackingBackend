@@ -10,7 +10,7 @@ public class DesignationController : ControllerBase
 {
     private readonly IDesignationService _service;
 
-    // ✅ Proper Dependency Injection
+   
     public DesignationController(IDesignationService service)
     {
         _service = service;

@@ -7,4 +7,5 @@ public interface IOutcomeTypeService
     Task CreateAsync(OutcomeTypeDto dto);
     Task UpdateAsync(OutcomeTypeDto dto);
     Task DeleteAsync(int id);
+    Task<IEnumerable<object>> GetDropdownAsync();
 }
