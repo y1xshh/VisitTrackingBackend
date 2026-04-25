@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
@@ -11,15 +12,18 @@ namespace VisitTracking.Application.Services
     {
         private readonly IVisitRepository _repository;
         private readonly IVehicleTypeRepository _vehicleRepo;
+        private readonly IAuditLogService _auditService;
         private readonly AppDbContext _context;
 
         public VisitService(
             IVisitRepository repository,
             IVehicleTypeRepository vehicleRepo,
+            IAuditLogService auditLogService,
             AppDbContext context)
         {
             _repository = repository;
             _vehicleRepo = vehicleRepo;
+            _auditService = auditLogService;
             _context = context;
         }
 
@@ -35,8 +39,6 @@ namespace VisitTracking.Application.Services
 
         public async Task Create(VisitDto dto)
         {
-         
-
             if (!await _context.Employees.AnyAsync(x => x.Id == dto.EmployeeId))
                 throw new Exception("Invalid EmployeeId");
 
@@ -67,8 +69,6 @@ namespace VisitTracking.Application.Services
             if (!await _context.Users.AnyAsync(x => x.Id == dto.InsertedBy))
                 throw new Exception("Invalid InsertedBy");
 
-
-           
             decimal? rate = dto.RateAppliedPerKm;
 
             if (rate == null || rate == 0)
@@ -77,62 +77,48 @@ namespace VisitTracking.Application.Services
                 rate = vehicle?.DefaultRatePerKm;
             }
 
-       
             decimal? expense = null;
             if (dto.DistanceKm != null && rate != null)
             {
                 expense = dto.DistanceKm * rate;
             }
 
-           
             decimal? latitude = decimal.TryParse(dto.Latitude, out var lat) ? lat : null;
             decimal? longitude = decimal.TryParse(dto.Longitude, out var lng) ? lng : null;
 
-        
             var entity = new Visit
             {
                 VisitCode = dto.VisitCode,
                 VisitDate = dto.VisitDate,
-
                 EmployeeId = dto.EmployeeId,
                 CompanyId = dto.CompanyId,
                 OrganisationId = dto.OrganisationId,
                 DepartmentId = dto.DepartmentId,
                 ContactPersonId = dto.ContactPersonId,
                 VisitPurposeId = dto.VisitPurposeId,
-
                 DiscussionSummary = dto.DiscussionSummary,
                 NextAction = dto.NextAction,
                 NextFollowUpDate = dto.NextFollowUpDate,
-
                 VehicleTypeId = dto.VehicleTypeId,
                 DistanceKm = dto.DistanceKm,
                 RateAppliedPerKm = rate,
                 TravelExpenseAmount = expense,
-
                 FunnelStageId = dto.FunnelStageId,
                 OutcomeTypeId = dto.OutcomeTypeId,
-
                 ExpectedBusinessValue = dto.ExpectedBusinessValue,
                 ActualBusinessValue = dto.ActualBusinessValue,
                 ProbabilityPercent = dto.ProbabilityPercent != null
                     ? (int?)dto.ProbabilityPercent
                     : null,
-
                 Status = dto.Status,
                 CheckInTime = dto.CheckInTime,
                 CheckOutTime = dto.CheckOutTime,
-
                 Latitude = latitude,
                 Longitude = longitude,
-
                 Remarks = dto.Remarks,
                 AttachmentPath = dto.AttachmentPath,
-
-                // ✅ IMPORTANT: DB expects string
                 InsertedBy = dto.InsertedBy.ToString(),
                 InsertedDate = DateTime.UtcNow,
-
                 UpdatedBy = dto.UpdatedBy?.ToString(),
                 UpdatedDate = dto.UpdatedDate
             };
@@ -157,6 +143,11 @@ namespace VisitTracking.Application.Services
         {
             var data = await _repository.GetByIdAsync(id);
             if (data == null) return;
+
+            var oldValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            });
 
             if (!await _context.Employees.AnyAsync(x => x.Id == dto.EmployeeId))
                 throw new Exception("Invalid EmployeeId");
@@ -262,6 +253,15 @@ namespace VisitTracking.Application.Services
 
             await _repository.DeleteAsync(id);
 
+            await _auditService.CreateAsync(new AuditLogDto
+            {
+                TableName = "Visit",
+                RecordId = data.Id,
+                ActionType = "DELETE",
+                OldValueJson = oldValueJson,
+                NewValueJson = null,
+                ActionBy = 1
+            });
         }
     }
 }

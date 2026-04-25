@@ -63,30 +63,15 @@ public class VisitFollowUpService : IVisitFollowUpService
             FunnelStageId = dto.FunnelStageId,
             OutcomeTypeId = dto.OutcomeTypeId,
             ExpectedBusinessValue = dto.ExpectedBusinessValue,
-            ActualBusinessValue = dto.ActualBusinessValue,
+            ActualBusinessValue = dto.OutcomeTypeId == 1 ? dto.ExpectedBusinessValue : dto.ActualBusinessValue,
             NextFollowUpDate = dto.NextFollowUpDate,
             IsActive = dto.IsActive,
             InsertedDate = DateTime.Now
         };
-       
+
         if (dto.NextFollowUpDate == null && dto.FollowUpDate != null)
         {
             entity.NextFollowUpDate = dto.FollowUpDate.Value.AddDays(2);
-        }
-        else
-        {
-            entity.NextFollowUpDate = dto.NextFollowUpDate;
-        }
-
-        await _repo.AddAsync(entity);
-       
-        if (dto.OutcomeTypeId == 1) 
-        {
-            entity.ActualBusinessValue = dto.ExpectedBusinessValue;
-        }
-        else
-        {
-            entity.ActualBusinessValue = dto.ActualBusinessValue;
         }
 
         await _repo.AddAsync(entity);
@@ -121,12 +106,10 @@ public class VisitFollowUpService : IVisitFollowUpService
         existingEntity.FunnelStageId = dto.FunnelStageId;
         existingEntity.OutcomeTypeId = dto.OutcomeTypeId;
         existingEntity.ExpectedBusinessValue = dto.ExpectedBusinessValue;
-        existingEntity.ActualBusinessValue = dto.ActualBusinessValue;
-        existingEntity.NextFollowUpDate = dto.NextFollowUpDate;
+        existingEntity.ActualBusinessValue = dto.OutcomeTypeId == 1 ? dto.ExpectedBusinessValue : dto.ActualBusinessValue;
         existingEntity.IsActive = dto.IsActive;
         existingEntity.UpdatedDate = DateTime.Now;
 
-        
         if (dto.NextFollowUpDate == null && dto.FollowUpDate != null)
         {
             existingEntity.NextFollowUpDate = dto.FollowUpDate.Value.AddDays(2);
@@ -135,17 +118,6 @@ public class VisitFollowUpService : IVisitFollowUpService
         {
             existingEntity.NextFollowUpDate = dto.NextFollowUpDate;
         }
-
-        await _repo.UpdateAsync(entity);
-   
-    if (dto.OutcomeTypeId == 1) 
-    {
-        entity.ActualBusinessValue = dto.ExpectedBusinessValue;
-    }
-    else
-    {
-        entity.ActualBusinessValue = dto.ActualBusinessValue;
-    }
 
         await _repo.UpdateAsync(existingEntity);
 
