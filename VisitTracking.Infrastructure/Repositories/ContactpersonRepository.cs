@@ -12,7 +12,6 @@ public class ContactpersonRepository : IContactpersonRepository
         _context = context;
     }
 
-
     public async Task<List<Contactperson>> GetAllAsync()
     {
         return await _context.Contactpersons
@@ -22,8 +21,7 @@ public class ContactpersonRepository : IContactpersonRepository
             .ToListAsync();
     }
 
-
-    public async Task<Contactperson> GetByIdAsync(int id)
+    public async Task<Contactperson?> GetByIdAsync(int id)
     {
         return await _context.Contactpersons
             .Include(x => x.Company)
@@ -57,10 +55,9 @@ public class ContactpersonRepository : IContactpersonRepository
         }
     }
 
-    public Task<Contactperson?> GetByEmailAsync(string email)
+    public async Task<Contactperson?> GetByEmailAsync(string email)
     {
-        var data = _context.Contactpersons.FirstOrDefault(x => x.Email == email);
-        return Task.FromResult(data);
+        return await _context.Contactpersons.FirstOrDefaultAsync(x => x.Email == email);
     }
 
     public async Task DeleteAsync(int id)
@@ -84,3 +81,4 @@ public class ContactpersonRepository : IContactpersonRepository
         return Task.CompletedTask;
     }
 }
+

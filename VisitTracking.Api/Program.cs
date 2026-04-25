@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Security.Claims;
 using System.Text.Json.Serialization;
 using VisitTracking.Application.Filter;
 using VisitTracking.Application.Interface;

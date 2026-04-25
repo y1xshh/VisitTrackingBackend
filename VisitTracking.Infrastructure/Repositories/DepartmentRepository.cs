@@ -25,6 +25,7 @@ public class DepartmentRepository : IDepartmentRepository
         var dep = await _context.Departments
             .Include(x => x.Organisation)
             .FirstOrDefaultAsync(x => x.Id == id);
+        return dep;
     }
 
     public async Task AddAsync(Department department)
