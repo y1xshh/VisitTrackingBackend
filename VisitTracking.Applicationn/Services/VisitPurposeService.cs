@@ -23,9 +23,7 @@ public class VisitPurposeService : IVisitPurposeService
         {
             Id = x.Id,
             PurposeName = x.PurposeName,
-            IsActive = x.IsActive.GetValueOrDefault(),
-            IsActive = data.IsActive,
-            IsActive = data.IsActive.GetValueOrDefault()
+            IsActive = x.IsActive
         }).ToList();
     }
 

@@ -38,6 +38,8 @@ namespace VisitTracking.Infrastructure.Repositories
 
         public async Task UpdateAsync(Visit entity)
         {
+            entity.UpdatedDate = DateTime.UtcNow;
+
             _context.Visits.Update(entity);
             await _context.SaveChangesAsync();
         }
