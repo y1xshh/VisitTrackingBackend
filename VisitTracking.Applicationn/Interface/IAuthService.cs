@@ -11,7 +11,6 @@ namespace VisitTracking.Application.Interface
         Task<string> ApproveUser(ApproveUserDto dto);
         Task<string> CreateUserByAdmin(CreateUserByAdminDto dto);
         Task CreateEmployee(EmployeeUserDto dto);
-
         Task<User> GetByEmailAsync(string email);
         Task<User> GetUserByIdAsync(int userId);
         Task UpdateAsync(User user);

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 
@@ -14,26 +14,27 @@ public class VisitController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IEnumerable<VisitResponseDto>>> GetAll()
     {
         return Ok(await _service.GetAllAsync());
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] VisitDto dto)
+    public async Task<IActionResult> Create([FromBody] CreateVisitDto dto)
     {
         await _service.Create(dto);
         return Ok("Visit Created");
     }
+
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] VisitDto dto)
+    public async Task<IActionResult> Update(int id, [FromBody] CreateVisitDto dto)
     {
         await _service.UpdateAsync(id, dto);
         return Ok("Visit Updated");
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<VisitResponseDto>> GetById(int id)
     {
         var data = await _service.GetByIdAsync(id);
         if (data == null) return NotFound();

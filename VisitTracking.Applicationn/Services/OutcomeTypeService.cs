@@ -1,8 +1,8 @@
 using Newtonsoft.Json;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
-using VisitTracking.Domain.Entities;
 using VisitTracking.Application.Constants;
+using VisitTracking.Domain.Entities;
 
 public class OutcomeTypeService : IOutcomeTypeService
 {
@@ -15,25 +15,25 @@ public class OutcomeTypeService : IOutcomeTypeService
         _auditService = auditLogService;
     }
 
-    public async Task<IEnumerable<OutcomeTypeDto>> GetAllAsync()
+    public async Task<IEnumerable<OutcomeTypeResponseDto>> GetAllAsync()
     {
         var data = await _repo.GetAllAsync();
 
-        return data.Select(x => new OutcomeTypeDto
+        return data.Select(x => new OutcomeTypeResponseDto
         {
             Id = x.Id,
             OutComeName = x.OutcomeName,
             IsRevenueLinked = x.IsRevenueLinked,
             IsActive = x.IsActive
-        });
+        }).ToList();
     }
 
-    public async Task<OutcomeTypeDto?> GetByIdAsync(int id)
+    public async Task<OutcomeTypeResponseDto?> GetByIdAsync(int id)
     {
         var x = await _repo.GetByIdAsync(id);
         if (x == null) return null;
 
-        return new OutcomeTypeDto
+        return new OutcomeTypeResponseDto
         {
             Id = x.Id,
             OutComeName = x.OutcomeName,
@@ -68,11 +68,9 @@ public class OutcomeTypeService : IOutcomeTypeService
         });
     }
 
-    public async Task UpdateAsync(OutcomeTypeDto dto)
+    public async Task UpdateAsync(int id, OutcomeTypeDto dto)
     {
-        if (!dto.Id.HasValue) return;
-
-        var existingEntity = await _repo.GetByIdAsync(dto.Id.Value);
+        var existingEntity = await _repo.GetByIdAsync(id);
         if (existingEntity == null) return;
 
         var oldValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
@@ -100,6 +98,7 @@ public class OutcomeTypeService : IOutcomeTypeService
             ActionBy = 1
         });
     }
+
     public async Task<IEnumerable<object>> GetDropdownAsync()
     {
         var data = await _repo.GetAllAsync();
@@ -114,11 +113,10 @@ public class OutcomeTypeService : IOutcomeTypeService
 
             });
     }
-           
+
     public async Task DeleteAsync(int id)
     {
         var data = await _repo.GetByIdAsync(id);
         return;
-
     }
 }

@@ -15,14 +15,27 @@ public class RoleService : IRoleService
         _auditService = auditLogService;
     }
 
-    public async Task<List<Role>> GetAllAsync()
+    public async Task<IEnumerable<RoleResponseDto>> GetAllAsync()
     {
-        return await _repository.GetAllAsync();
+        var data = await _repository.GetAllAsync();
+
+        return data.Select(x => new RoleResponseDto
+        {
+            Id = x.Id,
+            RoleName = x.RoleName
+        }).ToList();
     }
 
-    public async Task<Role?> GetByIdAsync(int id)
+    public async Task<RoleResponseDto?> GetByIdAsync(int id)
     {
-        return await _repository.GetByIdAsync(id);
+        var data = await _repository.GetByIdAsync(id);
+        if (data == null) return null;
+
+        return new RoleResponseDto
+        {
+            Id = data.Id,
+            RoleName = data.RoleName
+        };
     }
 
     public async Task Create(RoleDto dto)

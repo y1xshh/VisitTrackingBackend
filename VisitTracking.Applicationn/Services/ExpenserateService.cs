@@ -14,10 +14,10 @@ namespace VisitTracking.Application.Services
             _repo = repo;
         }
 
-        public async Task<IEnumerable<ExpenserateDto>> GetAllAsync()
+        public async Task<IEnumerable<ExpenserateResponseDto>> GetAllAsync()
         {
             var data = await _repo.GetAllAsync();
-            return data.Select(x => new ExpenserateDto
+            return data.Select(x => new ExpenserateResponseDto
             {
                 Id = x.Id,
                 VehicleTypeId = x.VehicleTypeId ?? 0,
@@ -28,12 +28,12 @@ namespace VisitTracking.Application.Services
             });
         }
 
-        public async Task<ExpenserateDto?> GetByIdAsync(int id)
+        public async Task<ExpenserateResponseDto?> GetByIdAsync(int id)
         {
             var x = await _repo.GetByIdAsync(id);
             if (x == null) return null;
 
-            return new ExpenserateDto
+            return new ExpenserateResponseDto
             {
                 Id = x.Id,
                 VehicleTypeId = x.VehicleTypeId ?? 0,
@@ -58,11 +58,11 @@ namespace VisitTracking.Application.Services
             await _repo.AddAsync(entity);
         }
 
-        public async Task UpdateAsync(ExpenserateDto dto)
+        public async Task UpdateAsync(int id, ExpenserateDto dto)
         {
             var entity = new Expenserate
             {
-                Id = dto.Id,
+                Id = id,
                 VehicleTypeId = dto.VehicleTypeId,
                 RatePerKm = dto.RatePerKm,
                 EffectiveFrom = DateOnly.FromDateTime(dto.EffectiveFrom),

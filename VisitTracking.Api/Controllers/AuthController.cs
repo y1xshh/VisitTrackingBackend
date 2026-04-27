@@ -37,10 +37,17 @@ public class AuthController(IAuthService service) : ControllerBase
     [AllowAnonymous] 
     public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
     {
-        var user = await _service.GetByEmailAsync(dto.Email);
+        var email = dto.Email?.Trim();
+        if (string.IsNullOrWhiteSpace(email))
+            return BadRequest("Email is required");
 
-        if (user == null)
-            return NotFound("User not found");
+        if (string.IsNullOrWhiteSpace(dto.OldPassword))
+            return BadRequest("Old password is required");
+
+        if (string.IsNullOrWhiteSpace(dto.NewPassword))
+            return BadRequest("New password is required");
+
+        var user = await _service.GetByEmailAsync(email);
 
         if (!BCrypt.Net.BCrypt.Verify(dto.OldPassword, user.PasswordHash))
             return BadRequest("Old password is incorrect");

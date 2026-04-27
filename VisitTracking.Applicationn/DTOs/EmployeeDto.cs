@@ -4,7 +4,6 @@
     {
         public int Id { get; set; }
         public string? EmployeeCode { get; set; }
-
         public int? UserId { get; set; }
         public int? DesignationId { get; set; }
         public int? ReportingManagerId { get; set; }

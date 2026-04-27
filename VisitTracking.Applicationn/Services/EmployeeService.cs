@@ -60,7 +60,7 @@ public class EmployeeService : IEmployeeService
 
         return new EmployeeDto
         {
-            Id = x.Id,
+        
             EmployeeCode = x.EmployeeCode,
             UserId = x.UserId,
             DesignationId = x.DesignationId,

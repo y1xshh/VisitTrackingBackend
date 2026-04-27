@@ -17,11 +17,11 @@ public class ContactpersonService : IContactpersonService
         _auditService = auditLogService;
     }
 
-    public async Task<List<ContactpersonDto>> GetAllAsync()
+    public async Task<List<ContactpersonResponseDto>> GetAllAsync()
     {
         var data = await _repository.GetAllAsync();
 
-        return data.Select(x => new ContactpersonDto
+        return data.Select(x => new ContactpersonResponseDto
         {
             Id = x.Id,
             Name = x.Name,
@@ -39,12 +39,12 @@ public class ContactpersonService : IContactpersonService
         }).ToList();
     }
 
-    public async Task<ContactpersonDto?> GetByIdAsync(int id)
+    public async Task<ContactpersonResponseDto?> GetByIdAsync(int id)
     {
         var x = await _repository.GetByIdAsync(id);
         if (x == null) return null;
 
-        return new ContactpersonDto
+        return new ContactpersonResponseDto
         {
             Id = x.Id,
             Name = x.Name,
@@ -162,12 +162,12 @@ public class ContactpersonService : IContactpersonService
         });
     }
 
-    public async Task<ContactpersonDto?> GetByEmailAsync(string email)
+    public async Task<ContactpersonResponseDto?> GetByEmailAsync(string email)
     {
         var x = await _repository.GetByEmailAsync(email);
         if (x == null) return null;
 
-        return new ContactpersonDto
+        return new ContactpersonResponseDto
         {
             Id = x.Id,
             Name = x.Name,
@@ -185,4 +185,3 @@ public class ContactpersonService : IContactpersonService
         };
     }
 }
-

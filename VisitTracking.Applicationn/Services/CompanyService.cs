@@ -15,11 +15,11 @@ public class CompanyService : ICompanyService
         _auditService = auditLogService;
     }
 
-    public async Task<IEnumerable<CompanyDto>> GetAllAsync()
+    public async Task<IEnumerable<CompanyResponseDto>> GetAllAsync()
     {
         var data = await _repo.GetAllAsync();
 
-        return data.Select(x => new CompanyDto
+        return data.Select(x => new CompanyResponseDto
         {
             Id = x.Id,
             CompanyName = x.CompanyName,
@@ -29,16 +29,16 @@ public class CompanyService : ICompanyService
             City = x.City,
             State = x.State,
             Pincode = x.Pincode,
-            IsActive = x.IsActive
+
         });
     }
 
-    public async Task<CompanyDto?> GetByIdAsync(int id)
+    public async Task<CompanyResponseDto?> GetByIdAsync(int id)
     {
         var x = await _repo.GetByIdAsync(id);
         if (x == null) return null;
 
-        return new CompanyDto
+        return new CompanyResponseDto
         {
             Id = x.Id,
             CompanyName = x.CompanyName,
@@ -48,7 +48,7 @@ public class CompanyService : ICompanyService
             City = x.City,
             State = x.State,
             Pincode = x.Pincode,
-            IsActive = x.IsActive
+  
         };
     }
 
@@ -67,7 +67,7 @@ public class CompanyService : ICompanyService
             City = dto.City,
             State = dto.State,
             Pincode = dto.Pincode,
-            IsActive = true,
+    
             InsertedDate = DateTime.Now
         };
 
@@ -87,13 +87,12 @@ public class CompanyService : ICompanyService
         });
     }
 
-    public async Task UpdateAsync(CompanyDto dto)
+    public async Task UpdateAsync(CompanyResponseDto dto)
     {
-        var oldEntity = await _repo.GetByIdAsync(dto.Id);
+        var oldEntity = await _repo.GetByIdAsync(dto.Id);   
 
         var entity = new Company
         {
-            Id = dto.Id,
             CompanyName = dto.CompanyName,
             CompanyType = dto.CompanyType,
             IndustryType = dto.IndustryType,
@@ -101,7 +100,7 @@ public class CompanyService : ICompanyService
             City = dto.City,
             State = dto.State,
             Pincode = dto.Pincode,
-            IsActive = dto.IsActive,
+      
             UpdatedDate = DateTime.Now
         };
 

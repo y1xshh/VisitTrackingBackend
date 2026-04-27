@@ -17,11 +17,11 @@ public class LocationService : ILocationService
         _auditService = auditLogService;
     }
 
-    public async Task<List<LocationDto>> GetAllAsync()
+    public async Task<IEnumerable<LocationResponseDto>> GetAllAsync()
     {
         var data = await _repo.GetAllAsync();
 
-        return data.Select(x => new LocationDto
+        return data.Select(x => new LocationResponseDto
         {
             Id = x.Id,
             LocationName = x.LocationName,
@@ -31,12 +31,12 @@ public class LocationService : ILocationService
         }).ToList();
     }
 
-    public async Task<LocationDto?> GetByIdAsync(int id)
+    public async Task<LocationResponseDto?> GetByIdAsync(int id)
     {
         var x = await _repo.GetByIdAsync(id);
         if (x == null) return null;
 
-        return new LocationDto
+        return new LocationResponseDto
         {
             Id = x.Id,
             LocationName = x.LocationName,

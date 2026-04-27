@@ -14,11 +14,11 @@ public class ExpenseApprovalService : IExpenseApprovalService
         _auditService = auditLogService;
     }
 
-    public async Task<IEnumerable<ExpenseApprovalDto>> GetAllAsync()
+    public async Task<IEnumerable<ExpenseApprovalResponseDto>> GetAllAsync()
     {
         var data = await _repo.GetAllAsync();
 
-        return data.Select(x => new ExpenseApprovalDto
+        return data.Select(x => new ExpenseApprovalResponseDto
         {
             Id = x.Id,
             VisitId = x.VisitId,
@@ -32,12 +32,12 @@ public class ExpenseApprovalService : IExpenseApprovalService
         });
     }
 
-    public async Task<ExpenseApprovalDto?> GetByIdAsync(int id)
+    public async Task<ExpenseApprovalResponseDto?> GetByIdAsync(int id)
     {
         var x = await _repo.GetByIdAsync(id);
         if (x == null) return null;
 
-        return new ExpenseApprovalDto
+        return new ExpenseApprovalResponseDto
         {
             Id = x.Id,
             VisitId = x.VisitId,
@@ -57,7 +57,7 @@ public class ExpenseApprovalService : IExpenseApprovalService
         {
             VisitId = dto.VisitId,
             SubmittedBy = dto.SubmittedBy,
-            ApprovalStatus = "Pending",   
+            ApprovalStatus = "Pending",
             SubmittedAt = DateTime.Now,
             IsActive = true,
             InsertedDate = DateTime.Now
@@ -79,9 +79,9 @@ public class ExpenseApprovalService : IExpenseApprovalService
         });
     }
 
-    public async Task UpdateAsync(ExpenseApprovalDto dto)
+    public async Task UpdateAsync(int id, ExpenseApprovalDto dto)
     {
-        var existingEntity = await _repo.GetByIdAsync(dto.Id);
+        var existingEntity = await _repo.GetByIdAsync(id);
         var oldValueJson = existingEntity != null
             ? JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
             {
@@ -91,7 +91,7 @@ public class ExpenseApprovalService : IExpenseApprovalService
 
         var entity = new Expenseapproval
         {
-            Id = dto.Id,
+            Id = id,
             VisitId = dto.VisitId,
             SubmittedBy = dto.SubmittedBy,
             ApprovedBy = dto.ApprovedBy,
@@ -142,7 +142,6 @@ public class ExpenseApprovalService : IExpenseApprovalService
         });
     }
 
-   
     public async Task ApproveAsync(int id, int approvedBy, string? remarks)
     {
         var data = await _repo.GetByIdAsync(id);
@@ -174,7 +173,6 @@ public class ExpenseApprovalService : IExpenseApprovalService
         });
     }
 
-    
     public async Task RejectAsync(int id, int approvedBy, string? remarks)
     {
         var data = await _repo.GetByIdAsync(id);

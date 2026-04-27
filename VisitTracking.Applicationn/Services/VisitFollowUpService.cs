@@ -14,11 +14,11 @@ public class VisitFollowUpService : IVisitFollowUpService
         _auditService = auditLogService;
     }
 
-    public async Task<IEnumerable<VisitFollowUpDto>> GetAllAsync()
+    public async Task<IEnumerable<VisitFollowUpResponseDto>> GetAllAsync()
     {
         var data = await _repo.GetAllAsync();
 
-        return data.Select(x => new VisitFollowUpDto
+        return data.Select(x => new VisitFollowUpResponseDto
         {
             Id = x.Id,
             VisitId = x.VisitId,
@@ -33,12 +33,12 @@ public class VisitFollowUpService : IVisitFollowUpService
         });
     }
 
-    public async Task<VisitFollowUpDto?> GetByIdAsync(int id)
+    public async Task<VisitFollowUpResponseDto?> GetByIdAsync(int id)
     {
         var x = await _repo.GetByIdAsync(id);
         if (x == null) return null;
 
-        return new VisitFollowUpDto
+        return new VisitFollowUpResponseDto
         {
             Id = x.Id,
             VisitId = x.VisitId,
@@ -90,9 +90,9 @@ public class VisitFollowUpService : IVisitFollowUpService
         });
     }
 
-    public async Task UpdateAsync(VisitFollowUpDto dto)
+    public async Task UpdateAsync(int id, VisitFollowUpDto dto)
     {
-        var existingEntity = await _repo.GetByIdAsync(dto.Id);
+        var existingEntity = await _repo.GetByIdAsync(id);
         if (existingEntity == null) return;
 
         var oldValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 
@@ -14,14 +14,14 @@ public class LocationController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IEnumerable<LocationResponseDto>>> GetAll()
     {
-     var data = await _service.GetAllAsync();
+        var data = await _service.GetAllAsync();
         return Ok(data);
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<LocationResponseDto>> GetById(int id)
     {
         var data = await _service.GetByIdAsync(id);
         if (data == null) return NotFound();
@@ -31,21 +31,21 @@ public class LocationController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(LocationDto dto)
     {
-       var result = await _service.CreateAsync(dto);
+        var result = await _service.CreateAsync(dto);
         return Ok(result);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, LocationDto dto)
     {
-        var result = await _service.UpdateAsync(id, dto);   
-          return Ok(result);
+        var result = await _service.UpdateAsync(id, dto);
+        return Ok(result);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-       var result = await _service.DeleteAsync(id);
+        var result = await _service.DeleteAsync(id);
         return Ok(result);
     }
 }

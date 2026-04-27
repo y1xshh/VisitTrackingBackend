@@ -2,7 +2,6 @@
 {
     public class UserListDto
     {
-        public int Id { get; set; }
         public string? EmployeeCode { get; set; }
         public string? FullName { get; set; }
         public string? Email { get; set; }

@@ -18,11 +18,11 @@ public class DesignationService : IDesignationService
         _auditService = auditLogService;
     }
 
-    public async Task<List<DesignationDto>> GetAllAsync()
+    public async Task<IEnumerable<DesignationResponseDto>> GetAllAsync()
     {
         var data = await _repo.GetAllAsync();
 
-        return data.Select(x => new DesignationDto
+        return data.Select(x => new DesignationResponseDto
         {
             Id = x.Id,
             DesignationName = x.DesignationName,
@@ -31,12 +31,12 @@ public class DesignationService : IDesignationService
         }).ToList();
     }
 
-    public async Task<DesignationDto?> GetByIdAsync(int id)
+    public async Task<DesignationResponseDto?> GetByIdAsync(int id)
     {
         var x = await _repo.GetByIdAsync(id);
         if (x == null) return null;
 
-        return new DesignationDto
+        return new DesignationResponseDto
         {
             Id = x.Id,
             DesignationName = x.DesignationName,

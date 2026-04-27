@@ -16,7 +16,8 @@ public class CompanyController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        return Ok(await _service.GetAllAsync());
+        var data = await _service.GetAllAsync();
+        return Ok(data);
     }
 
     [HttpGet("{id}")]
@@ -35,7 +36,7 @@ public class CompanyController : ControllerBase
     }
 
     [HttpPut]
-    public async Task<IActionResult> Update(CompanyDto dto)
+    public async Task<IActionResult> Update(CompanyResponseDto dto)
     {
         await _service.UpdateAsync(dto);
         return Ok("Updated Successfully");

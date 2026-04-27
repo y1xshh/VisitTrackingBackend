@@ -18,11 +18,11 @@ namespace VisitTracking.Application.Services
             _auditService = auditLogService;
         }
 
-        public async Task<List<DepartmentDto>> GetAllAsync()
+        public async Task<List<DepartmentResponseDto>> GetAllAsync()
         {
             var data = await _repository.GetAllAsync();
 
-            return data.Select(x => new DepartmentDto
+            return data.Select(x => new DepartmentResponseDto
             {
                 Id = x.Id,
                 DepartmentName = x.DepartmentName ?? string.Empty,
@@ -31,12 +31,12 @@ namespace VisitTracking.Application.Services
             }).ToList();
         }
 
-        public async Task<DepartmentDto?> GetByIdAsync(int id)
+        public async Task<DepartmentResponseDto?> GetByIdAsync(int id)
         {
             var dep = await _repository.GetByIdAsync(id);
             if (dep == null) return null;
 
-            return new DepartmentDto
+            return new DepartmentResponseDto
             {
                 Id = dep.Id,
                 DepartmentName = dep.DepartmentName ?? string.Empty,
