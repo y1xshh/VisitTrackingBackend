@@ -39,6 +39,7 @@ builder.Services.AddScoped<IVisitPurposeRepository, VisitpurposeRepository>();
 builder.Services.AddScoped<IVisitPurposeService, VisitPurposeService>();
 builder.Services.AddScoped<IVisitRepository, VisitRepository>();
 builder.Services.AddScoped<IVisitService, VisitService>();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IVehicleTypeRepository, VehicleTypeRepository>();

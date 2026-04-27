@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using VisitTracking.Application.DTOs;
@@ -14,17 +15,20 @@ namespace VisitTracking.Application.Services
         private readonly IVehicleTypeRepository _vehicleRepo;
         private readonly IAuditLogService _auditService;
         private readonly AppDbContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public VisitService(
             IVisitRepository repository,
             IVehicleTypeRepository vehicleRepo,
             IAuditLogService auditLogService,
-            AppDbContext context)
+            AppDbContext context,
+            IHttpContextAccessor httpContextAccessor)
         {
             _repository = repository;
             _vehicleRepo = vehicleRepo;
             _auditService = auditLogService;
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IEnumerable<VisitResponseDto>> GetAllAsync()
@@ -70,8 +74,8 @@ namespace VisitTracking.Application.Services
             if (!await _context.Outcometypes.AnyAsync(x => x.Id == dto.OutcomeTypeId))
                 throw new Exception("Invalid OutcomeTypeId");
 
-            if (!await _context.Users.AnyAsync(x => x.Id == dto.InsertedBy))
-                throw new Exception("Invalid InsertedBy");
+            var currentUserId = TryGetCurrentUserId();
+            var actionBy = currentUserId ?? dto.EmployeeId;
 
             decimal? rate = dto.RateAppliedPerKm;
 
@@ -121,10 +125,10 @@ namespace VisitTracking.Application.Services
                 Longitude = longitude,
                 Remarks = dto.Remarks,
                 AttachmentPath = dto.AttachmentPath,
-                InsertedBy = dto.InsertedBy.ToString(),
+                InsertedBy = dto.EmployeeId.ToString(),
                 InsertedDate = DateTime.UtcNow,
-                UpdatedBy = dto.UpdatedBy?.ToString(),
-                UpdatedDate = dto.UpdatedDate
+                UpdatedBy = dto.EmployeeId.ToString(),
+                UpdatedDate = DateTime.UtcNow
             };
 
             await _repository.AddAsync(entity);
@@ -139,7 +143,7 @@ namespace VisitTracking.Application.Services
                 {
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                 }),
-                ActionBy = 1
+                ActionBy = actionBy
             });
         }
 
@@ -196,6 +200,8 @@ namespace VisitTracking.Application.Services
 
             decimal? latitude = decimal.TryParse(dto.Latitude, out var lat) ? lat : null;
             decimal? longitude = decimal.TryParse(dto.Longitude, out var lng) ? lng : null;
+            var currentUserId = TryGetCurrentUserId();
+            var actionBy = currentUserId ?? dto.EmployeeId;
 
             data.VisitCode = dto.VisitCode;
             data.VisitDate = dto.VisitDate;
@@ -226,8 +232,8 @@ namespace VisitTracking.Application.Services
             data.Longitude = longitude;
             data.Remarks = dto.Remarks;
             data.AttachmentPath = dto.AttachmentPath;
-            data.UpdatedBy = dto.UpdatedBy?.ToString();
-            data.UpdatedDate = dto.UpdatedDate;
+            data.UpdatedBy = dto.EmployeeId.ToString();
+            data.UpdatedDate = DateTime.UtcNow;
 
             await _repository.UpdateAsync(data);
 
@@ -241,7 +247,7 @@ namespace VisitTracking.Application.Services
                 {
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                 }),
-                ActionBy = 1
+                ActionBy = actionBy
             });
         }
 
@@ -266,6 +272,18 @@ namespace VisitTracking.Application.Services
                 NewValueJson = null,
                 ActionBy = 1
             });
+        }
+
+        private int? TryGetCurrentUserId()
+        {
+            var userIdValue = _httpContextAccessor.HttpContext?.User.FindFirst("id")?.Value;
+
+            if (int.TryParse(userIdValue, out var userId))
+            {
+                return userId;
+            }
+
+            return null;
         }
 
         private static VisitResponseDto MapToDto(Visit entity)

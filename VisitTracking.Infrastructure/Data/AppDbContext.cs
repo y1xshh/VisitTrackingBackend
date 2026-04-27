@@ -83,7 +83,6 @@ public partial class AppDbContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("updated_by");
             entity.Property(e => e.UpdatedDate)
-                .ValueGeneratedOnAddOrUpdate()
                 .HasColumnType("datetime")
                 .HasColumnName("updated_date");
         });
@@ -115,7 +114,6 @@ public partial class AppDbContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("updated_by");
             entity.Property(e => e.UpdatedDate)
-                .ValueGeneratedOnAddOrUpdate()
                 .HasColumnType("datetime")
                 .HasColumnName("updated_date");
         });

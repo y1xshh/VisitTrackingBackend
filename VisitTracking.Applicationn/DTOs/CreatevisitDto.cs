@@ -30,8 +30,5 @@ namespace VisitTracking.Application.DTOs
         public string? Longitude { get; set; }
         public string? Remarks { get; set; }
         public string? AttachmentPath { get; set; }
-        public int InsertedBy { get; set; }
-        public int? UpdatedBy { get; set; }
-        public DateTime? UpdatedDate { get; set; }
     }
 }
