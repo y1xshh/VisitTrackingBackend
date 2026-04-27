@@ -1,9 +1,7 @@
-﻿namespace VisitTracking.Application.DTOs
+namespace VisitTracking.Application.DTOs
 {
     public class FunnelStageDto
     {
-        public int Id { get; set; }
-
         public string? StageName { get; set; }
         public string? Stagecode { get; set; }
         public int? StageOrder { get; set; }

@@ -1,8 +1,7 @@
-﻿namespace VisitTracking.Application.DTOs
+namespace VisitTracking.Application.DTOs
 {
     public class VisitFollowUpDto
     {
-        public int Id { get; set; }
         public int? VisitId { get; set; }
         public DateTime? FollowUpDate { get; set; }
         public string? FollowUpRemarks { get; set; }

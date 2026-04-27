@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 
@@ -37,10 +37,10 @@ namespace VisitTracking.Api.Controllers
             return Ok("Created Successfully");
         }
 
-        [HttpPut]
-        public async Task<IActionResult> Update(ExpenserateDto dto)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, ExpenserateDto dto)
         {
-            await _service.UpdateAsync(dto);
+            await _service.UpdateAsync(id, dto);
             return Ok("Updated Successfully");
         }
 

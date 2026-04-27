@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using VisitTracking.Application.DTOs;
-
+using VisitTracking.Application.Interface;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -14,13 +14,13 @@ public class VisitPurposeController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IEnumerable<VisitPurposeResponseDto>>> GetAll()
     {
         return Ok(await _service.GetAllAsync());
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> Get(int id)
+    public async Task<ActionResult<VisitPurposeResponseDto>> Get(int id)
     {
         var data = await _service.GetByIdAsync(id);
         if (data == null) return NotFound();

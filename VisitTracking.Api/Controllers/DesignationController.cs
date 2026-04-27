@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interfaces;
 
@@ -10,21 +10,20 @@ public class DesignationController : ControllerBase
 {
     private readonly IDesignationService _service;
 
-   
     public DesignationController(IDesignationService service)
     {
         _service = service;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IEnumerable<DesignationResponseDto>>> GetAll()
     {
         var data = await _service.GetAllAsync();
         return Ok(data);
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<DesignationResponseDto>> GetById(int id)
     {
         var data = await _service.GetByIdAsync(id);
         if (data == null) return NotFound();

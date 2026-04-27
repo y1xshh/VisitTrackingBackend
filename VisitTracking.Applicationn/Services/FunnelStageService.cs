@@ -17,13 +17,13 @@ public class FunnelStageService : IFunnelStageService
         _auditService = auditLogService;
     }
 
-    public async Task<IEnumerable<FunnelStageDto>> GetAllAsync()
+    public async Task<IEnumerable<FunnelStageResponseDto>> GetAllAsync()
     {
         var data = await _repo.GetAllAsync();
 
         return data
             .OrderBy(x => x.StageOrder)
-            .Select(static x => new FunnelStageDto
+            .Select(static x => new FunnelStageResponseDto
             {
                 Id = x.Id,
                 StageName = x.StageName,
@@ -33,15 +33,15 @@ public class FunnelStageService : IFunnelStageService
                 IsWonStage = x.IsWonStage,
                 IsLostStage = x.IsLostStage,
                 IsActive = x.IsActive
-            });
+            }).ToList();
     }
 
-    public async Task<FunnelStageDto?> GetByIdAsync(int id)
+    public async Task<FunnelStageResponseDto?> GetByIdAsync(int id)
     {
         var x = await _repo.GetByIdAsync(id);
         if (x == null) return null;
 
-        return new FunnelStageDto
+        return new FunnelStageResponseDto
         {
             Id = x.Id,
             Stagecode = $"F-{(x.StageOrder ?? 0).ToString("D2")}",
@@ -87,9 +87,9 @@ public class FunnelStageService : IFunnelStageService
         });
     }
 
-    public async Task UpdateAsync(FunnelStageDto dto)
+    public async Task UpdateAsync(int id, FunnelStageDto dto)
     {
-        var existingEntity = await _repo.GetByIdAsync(dto.Id);
+        var existingEntity = await _repo.GetByIdAsync(id);
         if (existingEntity == null) return;
 
         var oldValueJson = JsonConvert.SerializeObject(existingEntity, new JsonSerializerSettings
@@ -158,4 +158,3 @@ public class FunnelStageService : IFunnelStageService
         });
     }
 }
-

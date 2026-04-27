@@ -1,8 +1,7 @@
-﻿namespace VisitTracking.Application.DTOs
+namespace VisitTracking.Application.DTOs
 {
     public class VisitAttachmentDto
     {
-        public int Id { get; set; }
         public int? VisitId { get; set; }
         public string? FileName { get; set; }
         public string? FilePath { get; set; }

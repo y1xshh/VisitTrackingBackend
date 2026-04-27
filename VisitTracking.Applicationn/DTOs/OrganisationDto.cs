@@ -2,7 +2,6 @@ namespace VisitTracking.Application.DTOs;
 
 public class OrganisationDto
 {
-    public int Id { get; set; }
     public string? OrganisationName { get; set; }
     public int CompanyId { get; set; }
     public string? CompanyName { get; set; }

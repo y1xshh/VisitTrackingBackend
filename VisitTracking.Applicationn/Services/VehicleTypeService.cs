@@ -15,26 +15,28 @@ public class VehicleTypeService : IVehicleTypeService
         _auditService = auditLogService;
     }
 
-    public async Task<List<VehicleTypeDto>> GetAllAsync()
+    public async Task<IEnumerable<VehicleTypeResponseDto>> GetAllAsync()
     {
         var data = await _repository.GetAllAsync();
 
-        return data.Select(x => new VehicleTypeDto
+        return data.Select(x => new VehicleTypeResponseDto
         {
+            Id = x.Id,
             VehicleName = x.VehicleName,
             DefaultRatePerKm = x.DefaultRatePerKm,
             IsActive = x.IsActive
         }).ToList();
     }
 
-    public async Task<VehicleTypeDto?> GetByIdAsync(int id)
+    public async Task<VehicleTypeResponseDto?> GetByIdAsync(int id)
     {
         var x = await _repository.GetByIdAsync(id);
 
         if (x == null) return null;
 
-        return new VehicleTypeDto
+        return new VehicleTypeResponseDto
         {
+            Id = x.Id,
             VehicleName = x.VehicleName,
             DefaultRatePerKm = x.DefaultRatePerKm,
             IsActive = x.IsActive

@@ -24,7 +24,7 @@ public class AuditLogService : IAuditLogService
             OldValueJson = x.OldValueJson,
             NewValueJson = x.NewValueJson,
             ActionBy = x.ActionBy,
-            IsActive = x.IsActive
+   
         });
     }
 
@@ -38,7 +38,6 @@ public class AuditLogService : IAuditLogService
             OldValueJson = dto.OldValueJson,
             NewValueJson = dto.NewValueJson,
             ActionBy = dto.ActionBy,
-            IsActive = true,
             InsertedDate = DateTime.Now
         };
 

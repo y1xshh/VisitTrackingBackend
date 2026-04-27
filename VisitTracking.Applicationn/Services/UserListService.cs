@@ -24,8 +24,6 @@ namespace VisitTracking.Application.Services
 
                 return new UserListDto
                 {
-                    Id = user.Id,
-
                     EmployeeCode = employee?.EmployeeCode,
                     FullName = user.FullName,
                     Email = user.Email,
@@ -53,8 +51,6 @@ namespace VisitTracking.Application.Services
 
             return new UserListDto
             {
-                Id = user.Id,
-
                     EmployeeCode = employee?.EmployeeCode,
                     FullName = user.FullName,
                     Email = user.Email,

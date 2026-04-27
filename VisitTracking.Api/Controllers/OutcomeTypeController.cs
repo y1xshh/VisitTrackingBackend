@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 
@@ -16,13 +16,13 @@ namespace VisitTracking.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<ActionResult<IEnumerable<OutcomeTypeResponseDto>>> GetAll()
         {
             return Ok(await _service.GetAllAsync());
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        public async Task<ActionResult<OutcomeTypeResponseDto>> Get(int id)
         {
             var data = await _service.GetByIdAsync(id);
             if (data == null) return NotFound();
@@ -36,10 +36,10 @@ namespace VisitTracking.Api.Controllers
             return Ok("Created Successfully");
         }
 
-        [HttpPut]
-        public async Task<IActionResult> Update(OutcomeTypeDto dto)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, OutcomeTypeDto dto)
         {
-            await _service.UpdateAsync(dto);
+            await _service.UpdateAsync(id, dto);
             return Ok("Updated Successfully");
         }
 
@@ -52,6 +52,6 @@ namespace VisitTracking.Api.Controllers
 
         [HttpGet("dropdown")]
         public async Task<IActionResult> GetDropdown()
-        => Ok(await _service.GetDropdownAsync());
+            => Ok(await _service.GetDropdownAsync());
     }
 }

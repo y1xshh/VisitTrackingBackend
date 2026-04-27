@@ -1,4 +1,4 @@
-﻿using VisitTracking.Application.DTOs;
+using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Domain.Entities;
 
@@ -11,11 +11,11 @@ public class VisitAttachmentService : IVisitAttachmentService
         _repo = repo;
     }
 
-    public async Task<IEnumerable<VisitAttachmentDto>> GetAllAsync()
+    public async Task<IEnumerable<VisitAttachmentResponseDto>> GetAllAsync()
     {
         var data = await _repo.GetAllAsync();
 
-        return data.Select(x => new VisitAttachmentDto
+        return data.Select(x => new VisitAttachmentResponseDto
         {
             Id = x.Id,
             VisitId = x.VisitId,
@@ -26,12 +26,12 @@ public class VisitAttachmentService : IVisitAttachmentService
         });
     }
 
-    public async Task<VisitAttachmentDto?> GetByIdAsync(int id)
+    public async Task<VisitAttachmentResponseDto?> GetByIdAsync(int id)
     {
         var x = await _repo.GetByIdAsync(id);
         if (x == null) return null;
 
-        return new VisitAttachmentDto
+        return new VisitAttachmentResponseDto
         {
             Id = x.Id,
             VisitId = x.VisitId,
@@ -57,11 +57,11 @@ public class VisitAttachmentService : IVisitAttachmentService
         await _repo.AddAsync(entity);
     }
 
-    public async Task UpdateAsync(VisitAttachmentDto dto)
+    public async Task UpdateAsync(int id, VisitAttachmentDto dto)
     {
         var entity = new Visitattachment
         {
-            Id = dto.Id,
+            Id = id,
             VisitId = dto.VisitId,
             FileName = dto.FileName,
             FilePath = dto.FilePath,

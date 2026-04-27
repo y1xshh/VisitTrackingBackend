@@ -1,10 +1,9 @@
 ﻿using VisitTracking.Application.DTOs;
-using VisitTracking.Application.Interface;
 using VisitTracking.Domain.RepositoryInterfaces;
 
 namespace VisitTracking.Application.Services
 {
-    public class UserService : IUserService
+    public class UserService
     {
         private readonly IUserRepository _repository;
 

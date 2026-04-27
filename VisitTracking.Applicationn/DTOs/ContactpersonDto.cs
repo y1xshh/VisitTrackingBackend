@@ -2,12 +2,9 @@ namespace VisitTracking.Application.DTOs
 {
     public class ContactpersonDto
     {
-        public int Id { get; set; }
-
         public int? CompanyId { get; set; }
         public int? OrganisationId { get; set; }
         public int? DepartmentId { get; set; }
-
         public string? Name { get; set; }
         public string? Designation { get; set; }
         public string? Mobile { get; set; }

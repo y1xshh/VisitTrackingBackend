@@ -1,14 +1,13 @@
-﻿using VisitTracking.Application.DTOs;
-using VisitTracking.Domain.Entities;
+using VisitTracking.Application.DTOs;
 
 namespace VisitTracking.Application.Interface
 {
-   public interface IVisitService
+    public interface IVisitService
     {
-        Task<List<Visit>> GetAllAsync();
-        Task<Visit?> GetByIdAsync(int id);
-        Task Create(VisitDto dto);
-        Task UpdateAsync(int id, VisitDto dto);
+        Task<IEnumerable<VisitResponseDto>> GetAllAsync();
+        Task<VisitResponseDto?> GetByIdAsync(int id);
+        Task Create(CreateVisitDto dto);
+        Task UpdateAsync(int id, CreateVisitDto dto);
         Task DeleteAsync(int id);
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
@@ -27,17 +27,21 @@ namespace VisitTracking.Application.Services
             _context = context;
         }
 
-        public async Task<List<Visit>> GetAllAsync()
+        public async Task<IEnumerable<VisitResponseDto>> GetAllAsync()
         {
-            return await _repository.GetAllAsync();
+            var data = await _repository.GetAllAsync();
+            return data.Select(MapToDto).ToList();
         }
 
-        public async Task<Visit?> GetByIdAsync(int id)
+        public async Task<VisitResponseDto?> GetByIdAsync(int id)
         {
-            return await _repository.GetByIdAsync(id);
+            var data = await _repository.GetByIdAsync(id);
+            if (data == null) return null;
+
+            return MapToDto(data);
         }
 
-        public async Task Create(VisitDto dto)
+        public async Task Create(CreateVisitDto dto)
         {
             if (!await _context.Employees.AnyAsync(x => x.Id == dto.EmployeeId))
                 throw new Exception("Invalid EmployeeId");
@@ -139,7 +143,7 @@ namespace VisitTracking.Application.Services
             });
         }
 
-        public async Task UpdateAsync(int id, VisitDto dto)
+        public async Task UpdateAsync(int id, CreateVisitDto dto)
         {
             var data = await _repository.GetByIdAsync(id);
             if (data == null) return;
@@ -223,7 +227,7 @@ namespace VisitTracking.Application.Services
             data.Remarks = dto.Remarks;
             data.AttachmentPath = dto.AttachmentPath;
             data.UpdatedBy = dto.UpdatedBy?.ToString();
-            data.UpdatedDate = DateTime.UtcNow;
+            data.UpdatedDate = dto.UpdatedDate;
 
             await _repository.UpdateAsync(data);
 
@@ -262,6 +266,54 @@ namespace VisitTracking.Application.Services
                 NewValueJson = null,
                 ActionBy = 1
             });
+        }
+
+        private static VisitResponseDto MapToDto(Visit entity)
+        {
+            int insertedBy = 0;
+            int.TryParse(entity.InsertedBy, out insertedBy);
+
+            int? updatedBy = null;
+            if (int.TryParse(entity.UpdatedBy, out var parsedUpdatedBy))
+            {
+                updatedBy = parsedUpdatedBy;
+            }
+
+            return new VisitResponseDto
+            {
+                Id = entity.Id,
+                VisitCode = entity.VisitCode,
+                VisitDate = entity.VisitDate.GetValueOrDefault(),
+                EmployeeId = entity.EmployeeId.GetValueOrDefault(),
+                CompanyId = entity.CompanyId.GetValueOrDefault(),
+                OrganisationId = entity.OrganisationId.GetValueOrDefault(),
+                DepartmentId = entity.DepartmentId.GetValueOrDefault(),
+                ContactPersonId = entity.ContactPersonId.GetValueOrDefault(),
+                VisitPurposeId = entity.VisitPurposeId.GetValueOrDefault(),
+                DiscussionSummary = entity.DiscussionSummary,
+                NextAction = entity.NextAction,
+                NextFollowUpDate = entity.NextFollowUpDate,
+                VehicleTypeId = entity.VehicleTypeId.GetValueOrDefault(),
+                DistanceKm = entity.DistanceKm,
+                RateAppliedPerKm = entity.RateAppliedPerKm,
+                TravelExpenseAmount = entity.TravelExpenseAmount,
+                FunnelStageId = entity.FunnelStageId.GetValueOrDefault(),
+                OutcomeTypeId = entity.OutcomeTypeId.GetValueOrDefault(),
+                ExpectedBusinessValue = entity.ExpectedBusinessValue,
+                ActualBusinessValue = entity.ActualBusinessValue,
+                ProbabilityPercent = entity.ProbabilityPercent,
+                Status = entity.Status,
+                CheckInTime = entity.CheckInTime,
+                CheckOutTime = entity.CheckOutTime,
+                Latitude = entity.Latitude?.ToString(),
+                Longitude = entity.Longitude?.ToString(),
+                Remarks = entity.Remarks,
+                AttachmentPath = entity.AttachmentPath,
+                InsertedBy = insertedBy,
+                InsertedDate = entity.InsertedDate.GetValueOrDefault(),
+                UpdatedBy = updatedBy,
+                UpdatedDate = entity.UpdatedDate
+            };
         }
     }
 }

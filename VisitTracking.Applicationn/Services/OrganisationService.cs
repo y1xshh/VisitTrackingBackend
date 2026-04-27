@@ -17,11 +17,11 @@ public class OrganisationService : IOrganisationService
         _auditService = auditLogService;
     }
 
-    public async Task<List<OrganisationDto>> GetAllAsync()
+    public async Task<List<OrganisationResponseDto>> GetAllAsync()
     {
         var orgs = await _repository.GetAllAsync();
 
-        return orgs.Select(x => new OrganisationDto
+        return orgs.Select(x => new OrganisationResponseDto
         {
             Id = x.Id,
             OrganisationName = x.OrganisationName ?? string.Empty,
@@ -33,12 +33,12 @@ public class OrganisationService : IOrganisationService
         }).ToList();
     }
 
-    public async Task<OrganisationDto?> GetByIdAsync(int id)
+    public async Task<OrganisationResponseDto?> GetByIdAsync(int id)
     {
         var x = await _repository.GetByIdAsync(id);
         if (x == null) return null;
 
-        return new OrganisationDto
+        return new OrganisationResponseDto
         {
             Id = x.Id,
             OrganisationName = x.OrganisationName ?? string.Empty,

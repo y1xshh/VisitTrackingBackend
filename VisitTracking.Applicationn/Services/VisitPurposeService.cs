@@ -15,14 +15,31 @@ public class VisitPurposeService : IVisitPurposeService
         _auditService = auditLogService;
     }
 
-    public async Task<List<Visitpurpose>> GetAllAsync()
+    public async Task<IEnumerable<VisitPurposeResponseDto>> GetAllAsync()
     {
-        return await _repository.GetAllAsync();
+        var data = await _repository.GetAllAsync();
+
+        return data.Select(x => new VisitPurposeResponseDto
+        {
+            Id = x.Id,
+            PurposeName = x.PurposeName,
+            IsActive = x.IsActive.GetValueOrDefault(),
+            IsActive = data.IsActive,
+            IsActive = data.IsActive.GetValueOrDefault()
+        }).ToList();
     }
 
-    public async Task<Visitpurpose?> GetByIdAsync(int id)
+    public async Task<VisitPurposeResponseDto?> GetByIdAsync(int id)
     {
-        return await _repository.GetByIdAsync(id);
+        var data = await _repository.GetByIdAsync(id);
+        if (data == null) return null;
+
+        return new VisitPurposeResponseDto
+        {
+            Id = data.Id,
+            PurposeName = data.PurposeName,
+            IsActive = data.IsActive
+        };
     }
 
     public async Task Create(VisitPurposeDto dto)

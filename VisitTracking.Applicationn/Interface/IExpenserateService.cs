@@ -4,10 +4,10 @@ namespace VisitTracking.Application.Interface
 {
     public interface IExpenserateService
     {
-        Task<IEnumerable<ExpenserateDto>> GetAllAsync();
-        Task<ExpenserateDto?> GetByIdAsync(int id);
+        Task<IEnumerable<ExpenserateResponseDto>> GetAllAsync();
+        Task<ExpenserateResponseDto?> GetByIdAsync(int id);
         Task CreateAsync(ExpenserateDto dto);
-        Task UpdateAsync(ExpenserateDto dto);
+        Task UpdateAsync(int id, ExpenserateDto dto);
         Task DeleteAsync(int id);
     }
 }

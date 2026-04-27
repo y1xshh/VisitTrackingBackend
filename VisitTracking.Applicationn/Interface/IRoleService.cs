@@ -1,10 +1,9 @@
-﻿using VisitTracking.Application.DTOs;
-using VisitTracking.Domain.Entities;
+using VisitTracking.Application.DTOs;
 
 public interface IRoleService
 {
-    Task<List<Role>> GetAllAsync();
-    Task<Role?> GetByIdAsync(int id);
+    Task<IEnumerable<RoleResponseDto>> GetAllAsync();
+    Task<RoleResponseDto?> GetByIdAsync(int id);
     Task Create(RoleDto dto);
     Task UpdateAsync(int id, RoleDto dto);
     Task DeleteAsync(int id);

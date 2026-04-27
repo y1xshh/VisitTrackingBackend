@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 
@@ -14,6 +14,7 @@ namespace VisitTracking.Api.Controllers
         {
             _service = service;
         }
+
         [HttpPost("upload")]
         public async Task<IActionResult> Upload(IFormFile file, int visitId)
         {
@@ -22,7 +23,6 @@ namespace VisitTracking.Api.Controllers
 
             var fileName = Path.GetFileName(file.FileName);
 
-           
             var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
 
             if (!Directory.Exists(folderPath))
@@ -32,13 +32,11 @@ namespace VisitTracking.Api.Controllers
 
             var filePath = Path.Combine(folderPath, fileName);
 
-            
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
 
-      
             var dto = new VisitAttachmentDto
             {
                 VisitId = visitId,
@@ -74,10 +72,10 @@ namespace VisitTracking.Api.Controllers
             return Ok("Created Successfully");
         }
 
-        [HttpPut]
-        public async Task<IActionResult> Update(VisitAttachmentDto dto)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, VisitAttachmentDto dto)
         {
-            await _service.UpdateAsync(dto);
+            await _service.UpdateAsync(id, dto);
             return Ok("Updated Successfully");
         }
 

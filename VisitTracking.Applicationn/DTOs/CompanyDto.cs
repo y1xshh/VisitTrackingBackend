@@ -2,8 +2,6 @@
 {
     public class CompanyDto
     {
-        public int Id { get; set; }
-
         public string? CompanyName { get; set; }
         public string? CompanyType { get; set; }
         public string? IndustryType { get; set; }

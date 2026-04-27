@@ -38,14 +38,18 @@ namespace VisitTracking.Application.Services
 
         public async Task<string> Register(RegisterDTo dto)
         {
-            var existing = await _repo.GetByEmailAsync(dto.Email);
+            var email = dto.Email?.Trim();
+            if (string.IsNullOrWhiteSpace(email))
+                return "Email is required";
+
+            var existing = await _repo.GetByEmailAsync(email);
             if (existing != null)
                 return "User already exists";
 
             var user = new User
             {
                 FullName = dto.FullName,
-                Email = dto.Email,
+                Email = email,
                 Mobile = dto.Mobile,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.PasswordHash)
             };
@@ -65,6 +69,7 @@ namespace VisitTracking.Application.Services
                 {
                     Token = string.Empty,
                     Role = string.Empty,
+                    EmployeeId = 0,
                     IsFirstLogin = false,
                     Message = "Invalid credentials"
                 };
@@ -76,18 +81,22 @@ namespace VisitTracking.Application.Services
                 {
                     Token = string.Empty,
                     Role = string.Empty,
+                    EmployeeId = 0,
+                    Name = string.Empty,
                     IsFirstLogin = false,
+                    Department = string.Empty,
                     Message = "Your account is inactive. Contact admin."
                 };
             }
 
-             //✅ Check first login
-            if ((bool)user.IsFirstLogin)
+            //✅ Check first login
+            if (user.IsFirstLogin == true)
             {
                 return new LoginResponseDto
                 {
                     Token = string.Empty,
                     Role = string.Empty,
+                    EmployeeId = 0,
                     IsFirstLogin = false,
                     Message = "Invalid credentials"
                 };
@@ -98,10 +107,18 @@ namespace VisitTracking.Application.Services
                 .Select(r => r.RoleName)
                 .FirstOrDefaultAsync();
 
+            var employeeId = await _context.Set<Employee>()
+                .Where(e => e.UserId == user.Id)
+                .Select(e => e.Id)
+                .FirstOrDefaultAsync();
+
+       
+
             return new LoginResponseDto
             {
                 Token = GenerateJwt(user, role ?? string.Empty),
                 Role = role ?? string.Empty,
+                EmployeeId = employeeId,
                 IsFirstLogin = user.IsFirstLogin ?? false,
                 Message = "Login successful"
             };
@@ -157,13 +174,16 @@ namespace VisitTracking.Application.Services
                         return $"ReportingManagerId {dto.ReportingManagerId} not found in employees table";
                 }
 
+                var fullName = dto.FullName?.Trim() ?? throw new Exception("FullName is required");
+                var email = dto.Email?.Trim() ?? throw new Exception("Email is required");
+                var mobile = dto.Mobile?.Trim() ?? throw new Exception("Mobile is required");
                 var randomPassword = GeneratePassword();
 
                 var user = new User
                 {
-                    FullName = dto.FullName,
-                    Email = dto.Email,
-                    Mobile = dto.Mobile,
+                    FullName = fullName,
+                    Email = email,
+                    Mobile = mobile,
                     RoleId = dto.RoleId,
                     DepartmentId = dto.DepartmentId,
                     DesignationId = dto.DesignationId,
@@ -191,10 +211,10 @@ namespace VisitTracking.Application.Services
                 await _context.Set<Employee>().AddAsync(employee);
                 await _context.SaveChangesAsync();
 
-                var body = EmpRegEmailTemplate.Build(user.FullName, user.Email, randomPassword);
+                var body = EmpRegEmailTemplate.Build(fullName, email, randomPassword);
 
                 await _emailService.SendEmailAsync(
-                    user.Email,
+                    email,
                     "Account Created",
                     body
                 );
@@ -224,13 +244,16 @@ namespace VisitTracking.Application.Services
                 if (!deptExists)
                     throw new Exception("Invalid DepartmentId");
 
+                var fullName = dto.FullName?.Trim() ?? throw new Exception("FullName is required");
+                var email = dto.Email?.Trim() ?? throw new Exception("Email is required");
+                var mobile = dto.Mobile?.Trim() ?? throw new Exception("Mobile is required");
                 var randomPassword = GeneratePassword();
 
                 var user = new User
                 {
-                    FullName = dto.FullName,
-                    Email = dto.Email,
-                    Mobile = dto.Mobile,
+                    FullName = fullName,
+                    Email = email,
+                    Mobile = mobile,
                     RoleId = dto.RoleId,
                     DepartmentId = dto.DepartmentId,
                     DesignationId = dto.DesignationId,
@@ -275,13 +298,13 @@ namespace VisitTracking.Application.Services
                     throw new Exception("Employee cannot be their own manager");
                 }
                 var body = EmpRegEmailTemplate.Build(
-                    user.FullName,
-                    user.Email,
+                    fullName,
+                    email,
                     randomPassword
                 );
 
                 await _emailService.SendEmailAsync(
-                    user.Email,
+                    email,
                     "Employee Account Created",
                     body
                 );
