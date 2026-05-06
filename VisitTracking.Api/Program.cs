@@ -104,7 +104,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 
-builder.Services.AddControllers()
+builder.Services.AddControllers(options => options.Filters.Add<FirstLoginCheckFilter>())
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
@@ -126,7 +126,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocalhost", policy =>
     {
-        policy.WithOrigins("http://localhost:5174", "https://localhost:5173")
+        policy.WithOrigins("http://localhost:5174", "https://localhost:5173", "http://192.168.29.8:8080/api", "http://192.168.29.8:8022")
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();

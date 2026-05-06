@@ -15,5 +15,7 @@ namespace VisitTracking.Application.DTOs
         public string Message { get; set; } = string.Empty;
         public string? Name { get; set; }
         public string? Department { get; set; }
+        public bool IsFirstLoginRequired { get; set; }
+        public string? TempToken { get; set; } = string.Empty;
     }
 }

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "VisitTracking.Application": {
+      "commandName": "Project",
+      "workingDirectory": "D:\\YashSen\\Visit\\VisitTrackingBackend\\VisitTracking.Api"
+    }
+  }
+}
