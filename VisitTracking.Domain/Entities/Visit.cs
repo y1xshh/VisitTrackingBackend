@@ -75,7 +75,7 @@ public partial class Visit
 
     public virtual Employee? Employee { get; set; }
 
-    public virtual ICollection<Expenseapproval> Expenseapprovals { get; set; } = new List<Expenseapproval>();
+    public virtual ICollection<ExpenseApproval> ExpenseApprovals { get; set; } = new List<ExpenseApproval>();
 
     public virtual ICollection<Visitattachment> Visitattachments { get; set; } = new List<Visitattachment>();
 

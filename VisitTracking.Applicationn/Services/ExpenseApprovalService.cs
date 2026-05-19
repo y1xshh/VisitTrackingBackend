@@ -53,14 +53,14 @@ public class ExpenseApprovalService : IExpenseApprovalService
 
     public async Task CreateAsync(ExpenseApprovalDto dto)
     {
-        var entity = new Expenseapproval
+        var entity = new ExpenseApproval
         {
             VisitId = dto.VisitId,
             SubmittedBy = dto.SubmittedBy,
             ApprovalStatus = "Pending",
-            SubmittedAt = DateTime.Now,
+            SubmittedAt = DateTime.UtcNow,
             IsActive = true,
-            InsertedDate = DateTime.Now
+            InsertedDate = DateTime.UtcNow
         };
 
         await _repo.AddAsync(entity);
@@ -89,7 +89,7 @@ public class ExpenseApprovalService : IExpenseApprovalService
             })
             : null;
 
-        var entity = new Expenseapproval
+        var entity = new ExpenseApproval
         {
             Id = id,
             VisitId = dto.VisitId,
@@ -100,7 +100,7 @@ public class ExpenseApprovalService : IExpenseApprovalService
             SubmittedAt = dto.SubmittedAt,
             ApprovedAt = dto.ApprovedAt,
             IsActive = dto.IsActive,
-            UpdatedDate = DateTime.Now
+            UpdatedDate = DateTime.UtcNow
         };
 
         await _repo.UpdateAsync(entity);
@@ -155,7 +155,7 @@ public class ExpenseApprovalService : IExpenseApprovalService
         data.ApprovalStatus = "Approved";
         data.ApprovedBy = approvedBy;
         data.ApprovalRemarks = remarks;
-        data.ApprovedAt = DateTime.Now;
+        data.ApprovedAt = DateTime.UtcNow;
 
         await _repo.UpdateAsync(data);
 
@@ -186,7 +186,7 @@ public class ExpenseApprovalService : IExpenseApprovalService
         data.ApprovalStatus = "Rejected";
         data.ApprovedBy = approvedBy;
         data.ApprovalRemarks = remarks;
-        data.ApprovedAt = DateTime.Now;
+        data.ApprovedAt = DateTime.UtcNow;
 
         await _repo.UpdateAsync(data);
 

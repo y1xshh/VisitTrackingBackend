@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace VisitTracking.Domain.Entities;
 
-public partial class Expenseapproval
+public partial class ExpenseApproval
 {
     public int Id { get; set; }
 

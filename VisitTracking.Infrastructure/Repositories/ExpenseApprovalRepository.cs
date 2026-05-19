@@ -11,38 +11,38 @@ public class ExpenseApprovalRepository : IExpenseApprovalRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<Expenseapproval>> GetAllAsync()
+    public async Task<IEnumerable<ExpenseApproval>> GetAllAsync()
     {
-        return await _context.Expenseapprovals
+        return await _context.ExpenseApprovals
             .Include(x => x.Visit)
             .ToListAsync();
     }
 
-    public async Task<Expenseapproval?> GetByIdAsync(int id)
+    public async Task<ExpenseApproval?> GetByIdAsync(int id)
     {
-        return await _context.Expenseapprovals
+        return await _context.ExpenseApprovals
             .Include(x => x.Visit)
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 
-    public async Task AddAsync(Expenseapproval entity)
+    public async Task AddAsync(ExpenseApproval entity)
     {
-        await _context.Expenseapprovals.AddAsync(entity);
+        await _context.ExpenseApprovals.AddAsync(entity);
         await _context.SaveChangesAsync();
     }
 
-    public async Task UpdateAsync(Expenseapproval entity)
+    public async Task UpdateAsync(ExpenseApproval entity)
     {
-        _context.Expenseapprovals.Update(entity);
+        _context.ExpenseApprovals.Update(entity);
         await _context.SaveChangesAsync();
     }
 
     public async Task DeleteAsync(int id)
     {
-        var data = await _context.Expenseapprovals.FindAsync(id);
+        var data = await _context.ExpenseApprovals.FindAsync(id);
         if (data != null)
         {
-            _context.Expenseapprovals.Remove(data);
+            _context.ExpenseApprovals.Remove(data);
             await _context.SaveChangesAsync();
         }
     }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Security.Claims;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Application.Validators;
@@ -292,151 +293,224 @@ namespace VisitTracking.Application.Services
                 return ApiResponse<VisitApprovalResponseDto>.FailResponse(message);
             }
 
-            const int systemUserId = 0;
+            var actionDateUtc = DateTime.UtcNow;
+            var currentUserId = GetCurrentUserId();
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
                 var visit = await _context.Visits
+                    .Include(v => v.Employee)
+                        .ThenInclude(e => e!.User!)
                     .FirstOrDefaultAsync(v => v.Id == visitId);
 
                 if (visit == null)
                 {
+                    await transaction.RollbackAsync();
                     return ApiResponse<VisitApprovalResponseDto>.FailResponse("Visit not found.");
                 }
 
                 if (visit.Status != VisitStatus.Pending)
                 {
+                    await transaction.RollbackAsync();
                     return ApiResponse<VisitApprovalResponseDto>.FailResponse("Visit already processed.");
                 }
 
                 var previousStatus = visit.Status;
-                var actionDateUtc = DateTime.UtcNow;
-                visit.Status = request.IsApproved ? VisitStatus.Approved : VisitStatus.Rejected;
-                visit.UpdatedBy = systemUserId.ToString();
+                var newStatus = request.IsApproved ? VisitStatus.Approved : VisitStatus.Rejected;
+
+                var oldVisitSnapshot = new
+                {
+                    visit.Id,
+                    visit.VisitCode,
+                    Status = previousStatus.ToString(),
+                    visit.EmployeeId,
+                    visit.CompanyId,
+                    visit.OrganisationId,
+                    visit.DepartmentId,
+                    visit.ContactPersonId,
+                    visit.VisitPurposeId,
+                    visit.DiscussionSummary,
+                    visit.NextAction,
+                    visit.NextFollowUpDate,
+                    visit.VehicleTypeId,
+                    visit.DistanceKm,
+                    visit.RateAppliedPerKm,
+                    visit.TravelExpenseAmount,
+                    visit.FunnelStageId,
+                    visit.OutcomeTypeId,
+                    visit.ExpectedBusinessValue,
+                    visit.ActualBusinessValue,
+                    visit.ProbabilityPercent,
+                    visit.CheckInTime,
+                    visit.CheckOutTime,
+                    visit.Latitude,
+                    visit.Longitude,
+                    visit.Remarks,
+                    visit.AttachmentPath,
+                    visit.IsActive,
+                    visit.InsertedBy,
+                    visit.InsertedDate,
+                    visit.UpdatedBy,
+                    visit.UpdatedDate
+                };
+
+                visit.Status = newStatus;
+                visit.UpdatedBy = currentUserId.ToString();
                 visit.UpdatedDate = actionDateUtc;
 
+                var approvalHistory = new VisitApprovalHistory
+                {
+                    VisitId = visit.Id,
+                    PreviousStatus = previousStatus.ToString(),
+                    NewStatus = newStatus.ToString(),
+                    ActionByUserId = currentUserId,
+                    ActionDateUtc = actionDateUtc,
+                    IpAddress = TryGetClientIpAddress(),
+                    Remark = request.Remark,
+                    IsActive = true,
+                    InsertedBy = currentUserId.ToString(),
+                    InsertedDate = actionDateUtc,
+                    UpdatedBy = currentUserId.ToString(),
+                    UpdatedDate = actionDateUtc
+                };
+
+                var auditLog = new Auditlog
+                {
+                    TableName = "visits",
+                    RecordId = visit.Id,
+                    ActionType = "UPDATE",
+                    OldValueJson = JsonConvert.SerializeObject(oldVisitSnapshot, new JsonSerializerSettings
+                    {
+                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                    }),
+                    NewValueJson = JsonConvert.SerializeObject(new
+                    {
+                        visit.Id,
+                        visit.VisitCode,
+                        Status = newStatus.ToString(),
+                        visit.EmployeeId,
+                        visit.CompanyId,
+                        visit.OrganisationId,
+                        visit.DepartmentId,
+                        visit.ContactPersonId,
+                        visit.VisitPurposeId,
+                        visit.DiscussionSummary,
+                        visit.NextAction,
+                        visit.NextFollowUpDate,
+                        visit.VehicleTypeId,
+                        visit.DistanceKm,
+                        visit.RateAppliedPerKm,
+                        visit.TravelExpenseAmount,
+                        visit.FunnelStageId,
+                        visit.OutcomeTypeId,
+                        visit.ExpectedBusinessValue,
+                        visit.ActualBusinessValue,
+                        visit.ProbabilityPercent,
+                        visit.CheckInTime,
+                        visit.CheckOutTime,
+                        visit.Latitude,
+                        visit.Longitude,
+                        visit.Remarks,
+                        visit.AttachmentPath,
+                        visit.IsActive,
+                        visit.InsertedBy,
+                        visit.InsertedDate,
+                        visit.UpdatedBy,
+                        visit.UpdatedDate
+                    }, new JsonSerializerSettings
+                    {
+                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                    }),
+                    ActionBy = currentUserId,
+                    IsActive = true,
+                    InsertedBy = currentUserId.ToString(),
+                    InsertedDate = actionDateUtc,
+                    UpdatedBy = currentUserId.ToString(),
+                    UpdatedDate = actionDateUtc
+                };
+
+                await _context.VisitApprovalHistories.AddAsync(approvalHistory);
+                await _context.Auditlogs.AddAsync(auditLog);
+
+                await SendApprovalNotificationAsync(visit, request);
+
+                var expenseApproval = new ExpenseApproval
+                {
+                    VisitId = visit.Id,
+                    SubmittedBy = visit.EmployeeId,
+                    ApprovedBy = currentUserId,
+                    ApprovalStatus = newStatus.ToString(),
+                    ApprovalRemarks = request.Remark,
+                    SubmittedAt = visit.InsertedDate,
+                    ApprovedAt = actionDateUtc,
+                    IsActive = true,
+                    InsertedBy = currentUserId.ToString(),
+                    InsertedDate = actionDateUtc,
+                    UpdatedBy = currentUserId.ToString(),
+                    UpdatedDate = actionDateUtc
+                };
+
+                await _context.ExpenseApprovals.AddAsync(expenseApproval);
+
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 var response = new VisitApprovalResponseDto
                 {
                     VisitId = visit.Id,
-                    Status = visit.Status.ToString(),
+                    Status = newStatus.ToString(),
                     ActionDateUtc = actionDateUtc,
                     Message = request.IsApproved
-                        ? "Visit approved successfully."
-                        : "Visit rejected successfully."
+                        ? $"Visit {visit.Id} Approved"
+                        : $"Visit {visit.Id} Rejected"
                 };
-
-                await TryRecordApprovalHistoryAsync(visit, previousStatus, actionDateUtc, request, systemUserId);
-                await TryRecordApprovalAuditAsync(visit, previousStatus, actionDateUtc, request, systemUserId);
-                await SendApprovalNotificationAsync(visit, request);
 
                 return ApiResponse<VisitApprovalResponseDto>.SuccessResponse(response);
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Failed to process visit approval for VisitId {VisitId}", visitId);
                 return ApiResponse<VisitApprovalResponseDto>.FailResponse("Unable to process visit approval.");
             }
         }
 
-        private async Task TryRecordApprovalHistoryAsync(
-            Visit visit,
-            VisitStatus previousStatus,
-            DateTime actionDateUtc,
-            VisitApprovalRequestDto request,
-            int systemUserId)
-        {
-            try
-            {
-                await _context.VisitApprovalHistories.AddAsync(new VisitApprovalHistory
-                {
-                    VisitId = visit.Id,
-                    PreviousStatus = previousStatus.ToString(),
-                    NewStatus = visit.Status.ToString(),
-                    ActionByUserId = systemUserId,
-                    ActionDateUtc = actionDateUtc,
-                    IpAddress = TryGetClientIpAddress(),
-                    Remark = request.Remark,
-                    InsertedBy = systemUserId.ToString(),
-                    InsertedDate = actionDateUtc,
-                    UpdatedBy = systemUserId.ToString(),
-                    UpdatedDate = actionDateUtc,
-                    IsActive = true
-                });
-
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Approval history save failed for VisitId {VisitId}", visit.Id);
-            }
-        }
-
-        private async Task TryRecordApprovalAuditAsync(
-            Visit visit,
-            VisitStatus previousStatus,
-            DateTime actionDateUtc,
-            VisitApprovalRequestDto request,
-            int systemUserId)
-        {
-            try
-            {
-                await _auditService.CreateAsync(new AuditLogDto
-                {
-                    TableName = "VisitApprovalHistory",
-                    RecordId = visit.Id,
-                    ActionType = request.IsApproved ? "APPROVE" : "REJECT",
-                    OldValueJson = JsonConvert.SerializeObject(new
-                    {
-                        VisitId = visit.Id,
-                        PreviousStatus = previousStatus.ToString()
-                    }),
-                    NewValueJson = JsonConvert.SerializeObject(new
-                    {
-                        VisitId = visit.Id,
-                        NewStatus = visit.Status.ToString(),
-                        request.Remark,
-                        ActionByUserId = systemUserId,
-                        ActionDateUtc = actionDateUtc
-                    }),
-                    ActionBy = systemUserId
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Approval audit save failed for VisitId {VisitId}", visit.Id);
-            }
-        }
-
         private async Task SendApprovalNotificationAsync(Visit visit, VisitApprovalRequestDto request)
         {
-            try
+            var employee = visit.Employee;
+            var user = employee?.User;
+            var recipientEmail = user?.Email;
+
+            if (string.IsNullOrWhiteSpace(recipientEmail))
             {
-                var employee = visit.Employee;
-                var user = employee?.User;
-
-                if (user == null || string.IsNullOrWhiteSpace(user.Email))
-                {
-                    return;
-                }
-
-                var recipientEmail = user.Email;
-
-                var subject = request.IsApproved
-                    ? $"Visit {visit.Id} approved"
-                    : $"Visit {visit.Id} rejected";
-
-                var body = request.IsApproved
-                    ? $"Your visit #{visit.Id} has been approved.<br/><b>Remark:</b> {request.Remark}"
-                    : $"Your visit #{visit.Id} has been rejected.<br/><b>Remark:</b> {request.Remark}";
-
-                await _emailService.SendEmailAsync(recipientEmail, subject, body);
+                throw new InvalidOperationException($"Approval notification failed because recipient email is missing for VisitId {visit.Id}.");
             }
-            catch (Exception ex)
+
+            var statusText = request.IsApproved ? "Approved" : "Rejected";
+            var subject = $"Visit {visit.Id} {statusText}";
+            var body = request.IsApproved
+                ? $"Your visit #{visit.Id} has been approved.<br/><b>Remark:</b> {request.Remark}"
+                : $"Your visit #{visit.Id} has been rejected.<br/><b>Remark:</b> {request.Remark}";
+
+            await _emailService.SendEmailAsync(recipientEmail, subject, body);
+        }
+
+        private int GetCurrentUserId()
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            var claimValue =
+                httpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier) ??
+                httpContext?.User?.FindFirstValue("UserId") ??
+                httpContext?.User?.FindFirstValue("sub");
+
+            if (int.TryParse(claimValue, out var userId))
             {
-                _logger.LogWarning(ex, "Approval notification failed for VisitId {VisitId}", visit.Id);
+                return userId;
             }
+
+            return 0;
         }
 
         private string? TryGetClientIpAddress()
