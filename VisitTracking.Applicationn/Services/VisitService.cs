@@ -127,7 +127,7 @@ namespace VisitTracking.Application.Services
                 ProbabilityPercent = dto.ProbabilityPercent != null
                     ? (int?)dto.ProbabilityPercent
                     : null,
-                Status = ParseVisitStatus(dto.Status),
+                Status = VisitStatus.Pending,
                 CheckInTime = dto.CheckInTime,
                 CheckOutTime = dto.CheckOutTime,
                 Latitude = latitude,
@@ -233,7 +233,10 @@ namespace VisitTracking.Application.Services
             data.ProbabilityPercent = dto.ProbabilityPercent != null
                 ? (int?)dto.ProbabilityPercent
                 : null;
-            data.Status = ParseVisitStatus(dto.Status);
+            var requestedStatus = ParseVisitStatus(dto.Status);
+            data.Status = requestedStatus == VisitStatus.Pending
+                ? VisitStatus.Pending
+                : data.Status;
             data.CheckInTime = dto.CheckInTime;
             data.CheckOutTime = dto.CheckOutTime;
             data.Latitude = latitude;
@@ -314,7 +317,8 @@ namespace VisitTracking.Application.Services
                 if (visit.Status != VisitStatus.Pending)
                 {
                     await transaction.RollbackAsync();
-                    return ApiResponse<VisitApprovalResponseDto>.FailResponse("Visit already processed.");
+                    return ApiResponse<VisitApprovalResponseDto>.FailResponse(
+                        $"Visit already processed. Current status: {visit.Status}.");
                 }
 
                 var previousStatus = visit.Status;
