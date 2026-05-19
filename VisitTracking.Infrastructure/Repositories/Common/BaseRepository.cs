@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
-using VisitTracking.Domain.Common;
-using VisitTracking.Domain.RepositoryInterfaces.Common;
+using VisitTracking.Domain.Entities;
+using VisitTracking.Domain.RepositoryInterfaces;
 using VisitTracking.Infrastructure.Data;
 
 namespace VisitTracking.Infrastructure.Repositories.Common;

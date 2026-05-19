@@ -1,8 +1,8 @@
 using System.Linq.Expressions;
-using VisitTracking.Domain.RepositoryInterfaces.Common;
+using VisitTracking.Domain.RepositoryInterfaces;
 using VisitTracking.Domain.Services.Interfaces;
 
-namespace VisitTracking.Applicationn.Services.Common;
+namespace VisitTracking.Application.Services;
 
 /// <summary>
 /// Shared application service base that validates inputs before delegating to the repository.

@@ -47,7 +47,7 @@ public partial class Visit
 
     public int? ProbabilityPercent { get; set; }
 
-    public string? Status { get; set; }
+    public VisitStatus Status { get; set; } = VisitStatus.Pending;
 
     public DateTime? CheckInTime { get; set; }
 

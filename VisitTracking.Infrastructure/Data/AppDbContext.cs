@@ -44,6 +44,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Visit> Visits { get; set; } = null!;
 
+    public virtual DbSet<VisitApprovalHistory> VisitApprovalHistories { get; set; } = null!;
+
     public virtual DbSet<Visitattachment> Visitattachments { get; set; } = null!;
 
     public virtual DbSet<Visitfollowup> Visitfollowups { get; set; } = null!;
@@ -597,7 +599,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.NextFollowUpDate).HasColumnType("datetime");
             entity.Property(e => e.RateAppliedPerKm).HasPrecision(10, 2);
             entity.Property(e => e.Remarks).HasMaxLength(255);
-            entity.Property(e => e.Status).HasMaxLength(50);
+            entity.Property(e => e.Status)
+                .HasConversion<string>()
+                .HasMaxLength(50);
             entity.Property(e => e.TravelExpenseAmount).HasPrecision(10, 2);
             entity.Property(e => e.UpdatedBy)
                 .HasMaxLength(50)
@@ -644,6 +648,54 @@ public partial class AppDbContext : DbContext
             entity.HasOne<Outcometype>().WithMany()
                 .HasForeignKey(d => d.OutcomeTypeId)
                 .HasConstraintName("visits_ibfk_9");
+        });
+
+        modelBuilder.Entity<VisitApprovalHistory>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.ToTable("visit_approval_histories");
+
+            entity.HasIndex(e => e.VisitId, "VisitId");
+
+            entity.Property(e => e.ActionByUserId).HasColumnName("action_by_user_id");
+            entity.Property(e => e.ActionDateUtc)
+                .HasColumnType("datetime")
+                .HasColumnName("action_date_utc");
+            entity.Property(e => e.InsertedBy)
+                .HasMaxLength(50)
+                .HasColumnName("inserted_by");
+            entity.Property(e => e.InsertedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("inserted_date");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.NewStatus)
+                .HasMaxLength(50)
+                .HasColumnName("new_status");
+            entity.Property(e => e.PreviousStatus)
+                .HasMaxLength(50)
+                .HasColumnName("previous_status");
+            entity.Property(e => e.IpAddress)
+                .HasMaxLength(50)
+                .HasColumnName("ip_address");
+            entity.Property(e => e.Remark)
+                .HasMaxLength(500)
+                .HasColumnName("remark");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(50)
+                .HasColumnName("updated_by");
+            entity.Property(e => e.UpdatedDate)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasColumnType("datetime")
+                .HasColumnName("updated_date");
+
+            entity.HasOne(e => e.Visit)
+                .WithMany()
+                .HasForeignKey(e => e.VisitId)
+                .HasConstraintName("visit_approval_histories_ibfk_1");
         });
 
         modelBuilder.Entity<Visitattachment>(entity =>

@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace VisitTracking.Domain.RepositoryInterfaces.Common;
+namespace VisitTracking.Domain.RepositoryInterfaces;
 
 /// <summary>
 /// Enterprise generic repository contract for EF-backed persistence.

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using VisitTracking.Api.Controllers.Common;
 
-namespace VisitTracking.Api.Controllers.Common
+namespace VisitTracking.Api.Controllers
 {
     [ApiController]
     public abstract class BaseApiController : ControllerBase

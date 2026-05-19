@@ -9,7 +9,8 @@
 
   <ItemGroup>    
     <PackageReference Include="BCrypt.Net-Core" Version="1.6.0" />    
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.14" />    
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="9.0.14" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.14">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -28,6 +29,14 @@
 
   <ItemGroup>
     <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\assets\index-C3Gx5ayn.css" />
+    <None Include="wwwroot\assets\index-C9-t5arr.js" />
+    <None Include="wwwroot\favicon.svg" />
+    <None Include="wwwroot\icons.svg" />
+    <None Include="wwwroot\index.html" />
   </ItemGroup>
 
 </Project>

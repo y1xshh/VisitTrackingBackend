@@ -1,4 +1,4 @@
-namespace VisitTracking.Domain.Common
+namespace VisitTracking.Domain.Entities
 {
     public abstract class BaseEntity
     {

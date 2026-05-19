@@ -1,9 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using System.Text;
-using System.Security.Claims;
 using System.Text.Json.Serialization;
 using VisitTracking.Application.Filter;
 using VisitTracking.Application.Interface;
@@ -15,7 +11,6 @@ using VisitTracking.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -23,136 +18,102 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
-builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
-builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
-builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IOrganisationRepository, OrganisationRepository>();
-builder.Services.AddScoped<IOrganisationService, OrganisationService>();
-builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IContactpersonRepository, ContactpersonRepository>();
-builder.Services.AddScoped<IContactpersonService, ContactpersonService>();
 builder.Services.AddScoped<IVisitPurposeRepository, VisitpurposeRepository>();
-builder.Services.AddScoped<IVisitPurposeService, VisitPurposeService>();
 builder.Services.AddScoped<IVisitRepository, VisitRepository>();
-builder.Services.AddScoped<IVisitService, VisitService>();
-builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
-builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IVehicleTypeRepository, VehicleTypeRepository>();
-builder.Services.AddScoped<IVehicleTypeService, VehicleTypeService>();
 builder.Services.AddScoped<IExpenserateRepository, ExpenserateRepository>();
-builder.Services.AddScoped<IExpenserateService, ExpenserateService>();
 builder.Services.AddScoped<IFunnelStageRepository, FunnelStageRepository>();
-builder.Services.AddScoped<IFunnelStageService, FunnelStageService>();
 builder.Services.AddScoped<IOutcomeTypeRepository, OutcomeTypeRepository>();
-builder.Services.AddScoped<IOutcomeTypeService, OutcomeTypeService>();
 builder.Services.AddScoped<IVisitFollowUpRepository, VisitFollowUpRepository>();
-builder.Services.AddScoped<IVisitFollowUpService, VisitFollowUpService>();
 builder.Services.AddScoped<IVisitAttachmentRepository, VisitAttachmentRepository>();
-builder.Services.AddScoped<IVisitAttachmentService, VisitAttachmentService>();
 builder.Services.AddScoped<IExpenseApprovalRepository, ExpenseApprovalRepository>();
-builder.Services.AddScoped<IExpenseApprovalService, ExpenseApprovalService>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
-builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IUserListRepository, UserListRepository>();
-builder.Services.AddScoped<IUserListService, UserListService>();
-builder.Services.AddScoped<FirstLoginCheckFilter>();
 builder.Services.AddScoped<IDesignationRepository, DesignationRepository>();
-builder.Services.AddScoped<IDesignationService, DesignationService>();
 builder.Services.AddScoped<ILocationRepository, LocationRepository>();
+
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ICompanyService, CompanyService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<IOrganisationService, OrganisationService>();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IContactpersonService, ContactpersonService>();
+builder.Services.AddScoped<IVisitPurposeService, VisitPurposeService>();
+builder.Services.AddScoped<IVisitService, VisitService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IVehicleTypeService, VehicleTypeService>();
+builder.Services.AddScoped<IExpenserateService, ExpenserateService>();
+builder.Services.AddScoped<IFunnelStageService, FunnelStageService>();
+builder.Services.AddScoped<IOutcomeTypeService, OutcomeTypeService>();
+builder.Services.AddScoped<IVisitFollowUpService, VisitFollowUpService>();
+builder.Services.AddScoped<IVisitAttachmentService, VisitAttachmentService>();
+builder.Services.AddScoped<IExpenseApprovalService, ExpenseApprovalService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<IUserListService, UserListService>();
+builder.Services.AddScoped<IDesignationService, DesignationService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
-            NameClaimType = ClaimTypes.Name,
-            RoleClaimType = ClaimTypes.Role
-        };
+builder.Services.AddScoped<FirstLoginCheckFilter>();
 
-        options.Events = new JwtBearerEvents
-        {
-            OnTokenValidated = async context =>
-            {
-                var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
-                var userId = context.Principal?.FindFirst("id")?.Value;
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<FirstLoginCheckFilter>();
+})
+.AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler =
+        ReferenceHandler.IgnoreCycles;
+});
 
-                var user = await db.Users.FirstOrDefaultAsync(x => x.Id.ToString() == userId);
-
-                if (user == null || user.IsActive != true)
-                {
-                    context.Fail("User is inactive");
-                }
-            }
-        };
-    });
-
-builder.Services.AddAuthorization();
-
-
-builder.Services.AddControllers(options => options.Filters.Add<FirstLoginCheckFilter>())
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-    });
 builder.Services.AddEndpointsApiExplorer();
-
 
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new()
+    options.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "VisitTracking API",
-        Version = "v1"
+        Title = "Visit Tracking API",
+        Version = "v1",
+        Description = "Professional Visit Tracking Backend API"
     });
 });
 
-
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalhost", policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("http://localhost:5174", "https://localhost:5173", "http://192.168.29.8:8080/api", "http://192.168.29.8:8022")
+        policy.AllowAnyOrigin()
               .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
+              .AllowAnyHeader();
     });
 });
 
 var app = builder.Build();
 
+app.UseSwagger();
 
-if (app.Environment.IsDevelopment())
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Visit Tracking API V1");
+    options.RoutePrefix = "swagger";
+});
 
+app.UseHttpsRedirection();
 app.UseRouting();
-app.UseCors("AllowLocalhost");
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
-
+app.UseCors("AllowAll");
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
+app.MapFallbackToFile("index.html");
 app.Run();

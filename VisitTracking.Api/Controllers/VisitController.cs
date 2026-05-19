@@ -47,4 +47,17 @@ public class VisitController : ControllerBase
         await _service.DeleteAsync(id);
         return Ok("Visit Deleted");
     }
+
+    [HttpPut("{visitId:int}/approval")]
+    public async Task<IActionResult> ApproveVisit(int visitId, [FromBody] VisitApprovalRequestDto request)
+    {
+        var result = await _service.ApproveVisitAsync(visitId, request);
+
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
 }
