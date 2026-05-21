@@ -2,14 +2,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.Security.Claims;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Application.Validators;
 using VisitTracking.Domain.Entities;
 using VisitTracking.Domain.RepositoryInterfaces;
 using VisitTracking.Infrastructure.Data;
-using VisitTracking.Infrastructure.Repositories;
 
 namespace VisitTracking.Application.Services
 {
@@ -21,6 +19,7 @@ namespace VisitTracking.Application.Services
         private readonly IEmailService _emailService;
         private readonly AppDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<VisitService> _logger;
 
         public VisitService(
@@ -30,6 +29,7 @@ namespace VisitTracking.Application.Services
             IEmailService emailService,
             AppDbContext context,
             IHttpContextAccessor httpContextAccessor,
+            ICurrentUserService currentUserService,
             ILogger<VisitService> logger)
         {
             _repository = repository;
@@ -38,27 +38,45 @@ namespace VisitTracking.Application.Services
             _emailService = emailService;
             _context = context;
             _httpContextAccessor = httpContextAccessor;
+            _currentUserService = currentUserService;
             _logger = logger;
         }
 
         public async Task<IEnumerable<VisitResponseDto>> GetAllAsync()
         {
             var data = await _repository.GetAllAsync();
-            return data.Select(MapToDto).ToList();
+            var currentEmployeeId = _currentUserService.GetCurrentEmployeeId();
+            var designation = _currentUserService.GetCurrentDesignation();
+            var role = _currentUserService.GetCurrentRole();
+
+            var filtered = FilterByAccess(data, currentEmployeeId, designation, role);
+            return filtered.Select(MapToDto).ToList();
         }
 
         public async Task<VisitResponseDto?> GetByIdAsync(int id)
         {
             var data = await _repository.GetByIdAsync(id);
-            if (data == null) return null;
+            if (data == null)
+            {
+                return null;
+            }
+
+            var currentEmployeeId = _currentUserService.GetCurrentEmployeeId();
+            var designation = _currentUserService.GetCurrentDesignation();
+            var role = _currentUserService.GetCurrentRole();
+
+            if (!CanViewVisit(data, currentEmployeeId, designation, role))
+            {
+                throw new Exception("Unauthorized access to visit.");
+            }
 
             return MapToDto(data);
         }
 
         public async Task Create(CreateVisitDto dto)
         {
-            if (!await _context.Employees.AnyAsync(x => x.Id == dto.EmployeeId))
-                throw new Exception("Invalid EmployeeId");
+            var loggedInEmployee = await GetLoggedInEmployeeAsync();
+            var loggedInUserId = _currentUserService.GetCurrentUserId();
 
             if (!await _context.Companies.AnyAsync(x => x.Id == dto.CompanyId))
                 throw new Exception("Invalid CompanyId");
@@ -84,10 +102,7 @@ namespace VisitTracking.Application.Services
             if (!await _context.Outcometypes.AnyAsync(x => x.Id == dto.OutcomeTypeId))
                 throw new Exception("Invalid OutcomeTypeId");
 
-            const int systemUserId = 0;
-
             decimal? rate = dto.RateAppliedPerKm;
-
             if (rate == null || rate == 0)
             {
                 var vehicle = await _vehicleRepo.GetByIdAsync(dto.VehicleTypeId);
@@ -107,7 +122,8 @@ namespace VisitTracking.Application.Services
             {
                 VisitCode = dto.VisitCode,
                 VisitDate = dto.VisitDate,
-                EmployeeId = dto.EmployeeId,
+                EmployeeId = loggedInEmployee.Id,
+                ReportingManagerId = loggedInEmployee.ReportingManagerId,
                 CompanyId = dto.CompanyId,
                 OrganisationId = dto.OrganisationId,
                 DepartmentId = dto.DepartmentId,
@@ -134,9 +150,9 @@ namespace VisitTracking.Application.Services
                 Longitude = longitude,
                 Remarks = dto.Remarks,
                 AttachmentPath = dto.AttachmentPath,
-                InsertedBy = systemUserId.ToString(),
+                InsertedBy = loggedInUserId.ToString(),
                 InsertedDate = DateTime.UtcNow,
-                UpdatedBy = systemUserId.ToString(),
+                UpdatedBy = loggedInUserId.ToString(),
                 UpdatedDate = DateTime.UtcNow
             };
 
@@ -152,22 +168,28 @@ namespace VisitTracking.Application.Services
                 {
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                 }),
-                ActionBy = systemUserId
+                ActionBy = loggedInUserId
             });
         }
 
         public async Task UpdateAsync(int id, CreateVisitDto dto)
         {
             var data = await _repository.GetByIdAsync(id);
-            if (data == null) return;
+            if (data == null)
+                return;
+
+            var currentEmployeeId = _currentUserService.GetCurrentEmployeeId();
+            var currentDesignation = _currentUserService.GetCurrentDesignation();
+            var currentRole = _currentUserService.GetCurrentRole();
+            var currentUserId = _currentUserService.GetCurrentUserId();
+
+            if (!CanEditVisit(data, currentEmployeeId, currentDesignation, currentRole))
+                throw new Exception("Unauthorized access to update this visit.");
 
             var oldValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore
             });
-
-            if (!await _context.Employees.AnyAsync(x => x.Id == dto.EmployeeId))
-                throw new Exception("Invalid EmployeeId");
 
             if (!await _context.Companies.AnyAsync(x => x.Id == dto.CompanyId))
                 throw new Exception("Invalid CompanyId");
@@ -193,8 +215,9 @@ namespace VisitTracking.Application.Services
             if (!await _context.Outcometypes.AnyAsync(x => x.Id == dto.OutcomeTypeId))
                 throw new Exception("Invalid OutcomeTypeId");
 
-            decimal? rate = dto.RateAppliedPerKm;
+            var loggedInEmployee = await GetLoggedInEmployeeAsync();
 
+            decimal? rate = dto.RateAppliedPerKm;
             if (rate == null || rate == 0)
             {
                 var vehicle = await _vehicleRepo.GetByIdAsync(dto.VehicleTypeId);
@@ -209,11 +232,11 @@ namespace VisitTracking.Application.Services
 
             decimal? latitude = decimal.TryParse(dto.Latitude, out var lat) ? lat : null;
             decimal? longitude = decimal.TryParse(dto.Longitude, out var lng) ? lng : null;
-            const int systemUserId = 0;
 
             data.VisitCode = dto.VisitCode;
             data.VisitDate = dto.VisitDate;
-            data.EmployeeId = dto.EmployeeId;
+            data.EmployeeId = loggedInEmployee.Id;
+            data.ReportingManagerId = loggedInEmployee.ReportingManagerId;
             data.CompanyId = dto.CompanyId;
             data.OrganisationId = dto.OrganisationId;
             data.DepartmentId = dto.DepartmentId;
@@ -233,17 +256,13 @@ namespace VisitTracking.Application.Services
             data.ProbabilityPercent = dto.ProbabilityPercent != null
                 ? (int?)dto.ProbabilityPercent
                 : null;
-            var requestedStatus = ParseVisitStatus(dto.Status);
-            data.Status = requestedStatus == VisitStatus.Pending
-                ? VisitStatus.Pending
-                : data.Status;
             data.CheckInTime = dto.CheckInTime;
             data.CheckOutTime = dto.CheckOutTime;
             data.Latitude = latitude;
             data.Longitude = longitude;
             data.Remarks = dto.Remarks;
             data.AttachmentPath = dto.AttachmentPath;
-            data.UpdatedBy = systemUserId.ToString();
+            data.UpdatedBy = currentUserId.ToString();
             data.UpdatedDate = DateTime.UtcNow;
 
             await _repository.UpdateAsync(data);
@@ -258,14 +277,23 @@ namespace VisitTracking.Application.Services
                 {
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                 }),
-                ActionBy = systemUserId
+                ActionBy = currentUserId
             });
         }
 
         public async Task DeleteAsync(int id)
         {
             var data = await _repository.GetByIdAsync(id);
-            if (data == null) return;
+            if (data == null)
+                return;
+
+            var currentEmployeeId = _currentUserService.GetCurrentEmployeeId();
+            var designation = _currentUserService.GetCurrentDesignation();
+            var role = _currentUserService.GetCurrentRole();
+            var currentUserId = _currentUserService.GetCurrentUserId();
+
+            if (!CanEditVisit(data, currentEmployeeId, designation, role))
+                throw new Exception("Unauthorized access to delete this visit.");
 
             var oldValueJson = JsonConvert.SerializeObject(data, new JsonSerializerSettings
             {
@@ -281,7 +309,7 @@ namespace VisitTracking.Application.Services
                 ActionType = "DELETE",
                 OldValueJson = oldValueJson,
                 NewValueJson = null,
-                ActionBy = 1
+                ActionBy = currentUserId
             });
         }
 
@@ -297,7 +325,10 @@ namespace VisitTracking.Application.Services
             }
 
             var actionDateUtc = DateTime.UtcNow;
-            var currentUserId = GetCurrentUserId();
+            var currentUserId = _currentUserService.GetCurrentUserId();
+            var loggedInEmployeeId = _currentUserService.GetCurrentEmployeeId();
+            var currentDesignation = _currentUserService.GetCurrentDesignation();
+            var currentRole = _currentUserService.GetCurrentRole();
 
             await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -310,13 +341,16 @@ namespace VisitTracking.Application.Services
 
                 if (visit == null)
                 {
-                    await transaction.RollbackAsync();
                     return ApiResponse<VisitApprovalResponseDto>.FailResponse("Visit not found.");
+                }
+
+                if (!CanApproveVisit(visit, loggedInEmployeeId, currentDesignation, currentRole))
+                {
+                    return ApiResponse<VisitApprovalResponseDto>.FailResponse("Unauthorized approval.");
                 }
 
                 if (visit.Status != VisitStatus.Pending)
                 {
-                    await transaction.RollbackAsync();
                     return ApiResponse<VisitApprovalResponseDto>.FailResponse(
                         $"Visit already processed. Current status: {visit.Status}.");
                 }
@@ -330,6 +364,7 @@ namespace VisitTracking.Application.Services
                     visit.VisitCode,
                     Status = previousStatus.ToString(),
                     visit.EmployeeId,
+                    visit.ReportingManagerId,
                     visit.CompanyId,
                     visit.OrganisationId,
                     visit.DepartmentId,
@@ -395,6 +430,7 @@ namespace VisitTracking.Application.Services
                         visit.VisitCode,
                         Status = newStatus.ToString(),
                         visit.EmployeeId,
+                        visit.ReportingManagerId,
                         visit.CompanyId,
                         visit.OrganisationId,
                         visit.DepartmentId,
@@ -475,10 +511,100 @@ namespace VisitTracking.Application.Services
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                try
+                {
+                    await transaction.RollbackAsync();
+                }
+                catch (InvalidOperationException rollbackEx)
+                {
+                    _logger.LogWarning(rollbackEx, "Rollback skipped because transaction was already completed for VisitId {VisitId}", visitId);
+                }
+
                 _logger.LogError(ex, "Failed to process visit approval for VisitId {VisitId}", visitId);
                 return ApiResponse<VisitApprovalResponseDto>.FailResponse("Unable to process visit approval.");
             }
+        }
+
+        private async Task<Employee> GetLoggedInEmployeeAsync()
+        {
+            var loggedInEmployeeId = _currentUserService.GetCurrentEmployeeId();
+            if (loggedInEmployeeId <= 0)
+            {
+                throw new Exception("Invalid employee context");
+            }
+
+            var employee = await _context.Employees
+                .FirstOrDefaultAsync(x => x.Id == loggedInEmployeeId);
+
+            if (employee == null)
+            {
+                throw new Exception("Employee not found");
+            }
+
+            return employee;
+        }
+
+        private static bool IsAdminDesignation(string? designation)
+        {
+            return !string.IsNullOrWhiteSpace(designation) &&
+                   designation.Contains("admin", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsManagerDesignation(string? designation)
+        {
+            return !string.IsNullOrWhiteSpace(designation) &&
+                   designation.Contains("manager", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsSuperAdminRole(string? role)
+        {
+            return !string.IsNullOrWhiteSpace(role) &&
+                   role.Contains("super admin", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool CanViewVisit(Visit visit, int currentEmployeeId, string? designation, string? role)
+        {
+            if (IsSuperAdminRole(role) || IsAdminDesignation(designation))
+                return true;
+
+            if (IsManagerDesignation(designation))
+                return visit.ReportingManagerId == currentEmployeeId;
+
+            return visit.EmployeeId == currentEmployeeId;
+        }
+
+        private static bool CanEditVisit(Visit visit, int currentEmployeeId, string? designation, string? role)
+        {
+            if (IsSuperAdminRole(role) || IsAdminDesignation(designation))
+                return true;
+
+            if (IsManagerDesignation(designation))
+                return visit.ReportingManagerId == currentEmployeeId || visit.EmployeeId == currentEmployeeId;
+
+            return visit.EmployeeId == currentEmployeeId;
+        }
+
+        private static bool CanApproveVisit(Visit visit, int currentEmployeeId, string? designation, string? role)
+        {
+            if (IsSuperAdminRole(role) || IsAdminDesignation(designation))
+                return true;
+
+            return visit.ReportingManagerId == currentEmployeeId;
+        }
+
+        private static IEnumerable<Visit> FilterByAccess(
+            IEnumerable<Visit> visits,
+            int currentEmployeeId,
+            string? designation,
+            string? role)
+        {
+            if (IsSuperAdminRole(role) || IsAdminDesignation(designation))
+                return visits;
+
+            if (IsManagerDesignation(designation))
+                return visits.Where(v => v.ReportingManagerId == currentEmployeeId);
+
+            return visits.Where(v => v.EmployeeId == currentEmployeeId);
         }
 
         private async Task SendApprovalNotificationAsync(Visit visit, VisitApprovalRequestDto request)
@@ -499,22 +625,6 @@ namespace VisitTracking.Application.Services
                 : $"Your visit #{visit.Id} has been rejected.<br/><b>Remark:</b> {request.Remark}";
 
             await _emailService.SendEmailAsync(recipientEmail, subject, body);
-        }
-
-        private int GetCurrentUserId()
-        {
-            var httpContext = _httpContextAccessor.HttpContext;
-            var claimValue =
-                httpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier) ??
-                httpContext?.User?.FindFirstValue("UserId") ??
-                httpContext?.User?.FindFirstValue("sub");
-
-            if (int.TryParse(claimValue, out var userId))
-            {
-                return userId;
-            }
-
-            return 0;
         }
 
         private string? TryGetClientIpAddress()
@@ -553,21 +663,22 @@ namespace VisitTracking.Application.Services
                 Id = entity.Id,
                 VisitCode = entity.VisitCode,
                 VisitDate = entity.VisitDate.GetValueOrDefault(),
-                EmployeeId = entity.EmployeeId.GetValueOrDefault(),
-                CompanyId = entity.CompanyId.GetValueOrDefault(),
-                OrganisationId = entity.OrganisationId.GetValueOrDefault(),
-                DepartmentId = entity.DepartmentId.GetValueOrDefault(),
-                ContactPersonId = entity.ContactPersonId.GetValueOrDefault(),
-                VisitPurposeId = entity.VisitPurposeId.GetValueOrDefault(),
+                EmployeeId = entity.EmployeeId,
+                ReportingManagerId = entity.ReportingManagerId,
+                CompanyId = entity.CompanyId,
+                OrganisationId = entity.OrganisationId,
+                DepartmentId = entity.DepartmentId,
+                ContactPersonId = entity.ContactPersonId,
+                VisitPurposeId = entity.VisitPurposeId,
                 DiscussionSummary = entity.DiscussionSummary,
                 NextAction = entity.NextAction,
                 NextFollowUpDate = entity.NextFollowUpDate,
-                VehicleTypeId = entity.VehicleTypeId.GetValueOrDefault(),
+                VehicleTypeId = entity.VehicleTypeId,
                 DistanceKm = entity.DistanceKm,
                 RateAppliedPerKm = entity.RateAppliedPerKm,
                 TravelExpenseAmount = entity.TravelExpenseAmount,
-                FunnelStageId = entity.FunnelStageId.GetValueOrDefault(),
-                OutcomeTypeId = entity.OutcomeTypeId.GetValueOrDefault(),
+                FunnelStageId = entity.FunnelStageId,
+                OutcomeTypeId = entity.OutcomeTypeId,
                 ExpectedBusinessValue = entity.ExpectedBusinessValue,
                 ActualBusinessValue = entity.ActualBusinessValue,
                 ProbabilityPercent = entity.ProbabilityPercent,

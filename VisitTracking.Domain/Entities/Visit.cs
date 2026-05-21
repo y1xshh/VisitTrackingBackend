@@ -13,6 +13,8 @@ public partial class Visit
 
     public int? EmployeeId { get; set; }
 
+    public int? ReportingManagerId { get; set; }
+
     public int? CompanyId { get; set; }
 
     public int? OrganisationId { get; set; }
@@ -74,6 +76,8 @@ public partial class Visit
     public virtual Company? Company { get; set; }
 
     public virtual Employee? Employee { get; set; }
+
+    public virtual Employee? ReportingManager { get; set; }
 
     public virtual ICollection<ExpenseApproval> ExpenseApprovals { get; set; } = new List<ExpenseApproval>();
 

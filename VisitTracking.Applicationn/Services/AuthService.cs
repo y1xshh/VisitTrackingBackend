@@ -117,7 +117,7 @@ namespace VisitTracking.Application.Services
 
             return new LoginResponseDto
             {
-                Token = GenerateJwt(user, role ?? string.Empty),
+                Token = GenerateJwt(user, role ?? string.Empty, loginProfile.EmployeeId, loginProfile.Designation),
                 Role = role ?? string.Empty,
                 EmployeeId = loginProfile.EmployeeId,
                 Name = loginProfile.Name,
@@ -127,11 +127,11 @@ namespace VisitTracking.Application.Services
             };
         }
 
-        private async Task<(int EmployeeId, string Name, string Department)> GetLoginProfileAsync(User user)
+        private async Task<(int EmployeeId, string Name, string Department, string Designation)> GetLoginProfileAsync(User user)
         {
-            var employeeId = await _context.Set<Employee>()
+            var employee = await _context.Set<Employee>()
+                .Include(e => e.Designation)
                 .Where(e => e.UserId == user.Id)
-                .Select(e => e.Id)
                 .FirstOrDefaultAsync();
 
             var departmentId = user.DepartmentId;
@@ -151,10 +151,19 @@ namespace VisitTracking.Application.Services
                     .FirstOrDefaultAsync()
                 : string.Empty;
 
+            var designation = employee?.Designation?.DesignationName ??
+                (user.DesignationId.HasValue
+                    ? await _context.Set<MstDesignation>()
+                        .Where(d => d.Id == user.DesignationId.Value)
+                        .Select(d => d.DesignationName)
+                        .FirstOrDefaultAsync()
+                    : string.Empty);
+
             return (
-                employeeId,
+                employee?.Id ?? 0,
                 user.FullName ?? string.Empty,
-                department ?? string.Empty
+                department ?? string.Empty,
+                designation ?? string.Empty
             );
         }
 
@@ -183,11 +192,13 @@ namespace VisitTracking.Application.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        private string GenerateJwt(User user, string role)
+        private string GenerateJwt(User user, string role, int employeeId, string designation)
         {
             var claims = new[]
             {
-                new Claim("id", user.Id.ToString()),
+                new Claim("UserId", user.Id.ToString()),
+                new Claim("EmployeeId", employeeId.ToString()),
+                new Claim("Designation", designation),
                 new Claim(ClaimTypes.Name, user.FullName ?? string.Empty),
                 new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
                 new Claim(ClaimTypes.Role, role),
@@ -506,7 +517,7 @@ namespace VisitTracking.Application.Services
 
             return new LoginResponseDto
             {
-                Token = GenerateJwt(user, role ?? string.Empty),
+                Token = GenerateJwt(user, role ?? string.Empty, loginProfile.EmployeeId, loginProfile.Designation),
                 Role = role ?? string.Empty,
                 EmployeeId = loginProfile.EmployeeId,
                 Name = loginProfile.Name,

@@ -19,6 +19,9 @@ namespace VisitTracking.Infrastructure.Repositories
             return await _context.Visits
                 .Include(v => v.Company)
                 .Include(v => v.Employee)
+                    .ThenInclude(e => e!.User)
+                .Include(v => v.ReportingManager)
+                    .ThenInclude(m => m!.User)
                 .ToListAsync();
         }
 
@@ -27,6 +30,9 @@ namespace VisitTracking.Infrastructure.Repositories
             return await _context.Visits
                 .Include(v => v.Company)
                 .Include(v => v.Employee)
+                    .ThenInclude(e => e!.User)
+                .Include(v => v.ReportingManager)
+                    .ThenInclude(m => m!.User)
                 .FirstOrDefaultAsync(v => v.Id == id);
         }
 

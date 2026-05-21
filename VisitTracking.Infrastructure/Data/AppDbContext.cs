@@ -290,6 +290,7 @@ public partial class AppDbContext : DbContext
             entity.HasIndex(e => e.ContactPersonId, "ContactPersonId");
             entity.HasIndex(e => e.DepartmentId, "DepartmentId");
             entity.HasIndex(e => e.EmployeeId, "EmployeeId");
+            entity.HasIndex(e => e.ReportingManagerId, "ReportingManagerId");
             entity.HasIndex(e => e.FunnelStageId, "FunnelStageId");
             entity.HasIndex(e => e.OrganisationId, "OrganisationId");
             entity.HasIndex(e => e.OutcomeTypeId, "OutcomeTypeId");
@@ -320,6 +321,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.Company).WithMany(p => p.Visits).HasForeignKey(d => d.CompanyId).HasConstraintName("visits_ibfk_2");
             entity.HasOne(d => d.Employee).WithMany(p => p.Visits).HasForeignKey(d => d.EmployeeId).HasConstraintName("visits_ibfk_1");
+            entity.HasOne(d => d.ReportingManager).WithMany().HasForeignKey(d => d.ReportingManagerId).HasConstraintName("visits_ibfk_reporting_manager");
             entity.HasOne<Organisation>().WithMany().HasForeignKey(d => d.OrganisationId).HasConstraintName("visits_ibfk_3");
             entity.HasOne<Department>().WithMany().HasForeignKey(d => d.DepartmentId).HasConstraintName("visits_ibfk_4");
             entity.HasOne<Contactperson>().WithMany().HasForeignKey(d => d.ContactPersonId).HasConstraintName("visits_ibfk_5");

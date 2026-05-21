@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class VisitController : ControllerBase
 {
