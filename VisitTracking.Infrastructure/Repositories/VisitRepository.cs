@@ -17,6 +17,7 @@ namespace VisitTracking.Infrastructure.Repositories
         public async Task<List<Visit>> GetAllAsync()
         {
             return await _context.Visits
+                .Where(v => v.IsActive != false)
                 .Include(v => v.Company)
                 .Include(v => v.Employee)
                     .ThenInclude(e => e!.User)
@@ -28,6 +29,7 @@ namespace VisitTracking.Infrastructure.Repositories
         public async Task<Visit?> GetByIdAsync(int id)
         {
             return await _context.Visits
+                .Where(v => v.IsActive != false)
                 .Include(v => v.Company)
                 .Include(v => v.Employee)
                     .ThenInclude(e => e!.User)
@@ -52,10 +54,12 @@ namespace VisitTracking.Infrastructure.Repositories
 
         public async Task DeleteAsync(int id)
         {
-            var data = await _context.Visits.FindAsync(id);
+            var data = await _context.Visits.FirstOrDefaultAsync(v => v.Id == id);
             if (data != null)
             {
-                _context.Visits.Remove(data);
+                data.IsActive = false;
+                data.UpdatedDate = DateTime.UtcNow;
+                _context.Visits.Update(data);
                 await _context.SaveChangesAsync();
             }
         }

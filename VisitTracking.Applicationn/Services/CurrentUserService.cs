@@ -13,40 +13,19 @@ namespace VisitTracking.Application.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public ClaimsPrincipal? GetCurrentPrincipal()
-        {
-            return _httpContextAccessor.HttpContext?.User;
-        }
+        public ClaimsPrincipal? Principal => _httpContextAccessor.HttpContext?.User;
 
-        public int GetCurrentUserId()
-        {
-            return GetIntClaim("UserId", ClaimTypes.NameIdentifier, "id", "sub");
-        }
+        public int UserId => GetIntClaim("UserId", ClaimTypes.NameIdentifier, "id", "sub");
 
-        public int GetCurrentEmployeeId()
-        {
-            return GetIntClaim("EmployeeId");
-        }
+        public int EmployeeId => GetIntClaim("EmployeeId");
 
-        public string? GetCurrentDesignation()
-        {
-            var principal = GetCurrentPrincipal();
-            return principal?.FindFirstValue("Designation");
-        }
-
-        public string? GetCurrentRole()
-        {
-            var principal = GetCurrentPrincipal();
-            return principal?.FindFirstValue(ClaimTypes.Role) ?? principal?.FindFirstValue("role");
-        }
+        public string? Designation => Principal?.FindFirstValue("Designation");
 
         private int GetIntClaim(params string[] claimTypes)
         {
-            var principal = GetCurrentPrincipal();
-
             foreach (var claimType in claimTypes)
             {
-                var value = principal?.FindFirstValue(claimType);
+                var value = Principal?.FindFirstValue(claimType);
                 if (int.TryParse(value, out var parsedValue))
                 {
                     return parsedValue;

@@ -4,10 +4,9 @@ namespace VisitTracking.Application.Interface
 {
     public interface ICurrentUserService
     {
-        int GetCurrentUserId();
-        int GetCurrentEmployeeId();
-        string? GetCurrentDesignation();
-        string? GetCurrentRole();
-        ClaimsPrincipal? GetCurrentPrincipal();
+        int UserId { get; }
+        int EmployeeId { get; }
+        string? Designation { get; }
+        ClaimsPrincipal? Principal { get; }
     }
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Security.Claims;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 using VisitTracking.Application.Validators;
@@ -45,9 +46,9 @@ namespace VisitTracking.Application.Services
         public async Task<IEnumerable<VisitResponseDto>> GetAllAsync()
         {
             var data = await _repository.GetAllAsync();
-            var currentEmployeeId = _currentUserService.GetCurrentEmployeeId();
-            var designation = _currentUserService.GetCurrentDesignation();
-            var role = _currentUserService.GetCurrentRole();
+            var currentEmployeeId = _currentUserService.EmployeeId;
+            var designation = _currentUserService.Designation;
+            var role = GetCurrentRole();
 
             var filtered = FilterByAccess(data, currentEmployeeId, designation, role);
             return filtered.Select(MapToDto).ToList();
@@ -61,9 +62,9 @@ namespace VisitTracking.Application.Services
                 return null;
             }
 
-            var currentEmployeeId = _currentUserService.GetCurrentEmployeeId();
-            var designation = _currentUserService.GetCurrentDesignation();
-            var role = _currentUserService.GetCurrentRole();
+            var currentEmployeeId = _currentUserService.EmployeeId;
+            var designation = _currentUserService.Designation;
+            var role = GetCurrentRole();
 
             if (!CanViewVisit(data, currentEmployeeId, designation, role))
             {
@@ -76,7 +77,7 @@ namespace VisitTracking.Application.Services
         public async Task Create(CreateVisitDto dto)
         {
             var loggedInEmployee = await GetLoggedInEmployeeAsync();
-            var loggedInUserId = _currentUserService.GetCurrentUserId();
+            var loggedInUserId = _currentUserService.UserId;
 
             if (!await _context.Companies.AnyAsync(x => x.Id == dto.CompanyId))
                 throw new Exception("Invalid CompanyId");
@@ -140,9 +141,7 @@ namespace VisitTracking.Application.Services
                 OutcomeTypeId = dto.OutcomeTypeId,
                 ExpectedBusinessValue = dto.ExpectedBusinessValue,
                 ActualBusinessValue = dto.ActualBusinessValue,
-                ProbabilityPercent = dto.ProbabilityPercent != null
-                    ? (int?)dto.ProbabilityPercent
-                    : null,
+                ProbabilityPercent = dto.ProbabilityPercent != null ? (int?)dto.ProbabilityPercent : null,
                 Status = VisitStatus.Pending,
                 CheckInTime = dto.CheckInTime,
                 CheckOutTime = dto.CheckOutTime,
@@ -150,6 +149,7 @@ namespace VisitTracking.Application.Services
                 Longitude = longitude,
                 Remarks = dto.Remarks,
                 AttachmentPath = dto.AttachmentPath,
+                IsActive = true,
                 InsertedBy = loggedInUserId.ToString(),
                 InsertedDate = DateTime.UtcNow,
                 UpdatedBy = loggedInUserId.ToString(),
@@ -178,10 +178,10 @@ namespace VisitTracking.Application.Services
             if (data == null)
                 return;
 
-            var currentEmployeeId = _currentUserService.GetCurrentEmployeeId();
-            var currentDesignation = _currentUserService.GetCurrentDesignation();
-            var currentRole = _currentUserService.GetCurrentRole();
-            var currentUserId = _currentUserService.GetCurrentUserId();
+            var currentEmployeeId = _currentUserService.EmployeeId;
+            var currentDesignation = _currentUserService.Designation;
+            var currentRole = GetCurrentRole();
+            var currentUserId = _currentUserService.UserId;
 
             if (!CanEditVisit(data, currentEmployeeId, currentDesignation, currentRole))
                 throw new Exception("Unauthorized access to update this visit.");
@@ -253,9 +253,7 @@ namespace VisitTracking.Application.Services
             data.OutcomeTypeId = dto.OutcomeTypeId;
             data.ExpectedBusinessValue = dto.ExpectedBusinessValue;
             data.ActualBusinessValue = dto.ActualBusinessValue;
-            data.ProbabilityPercent = dto.ProbabilityPercent != null
-                ? (int?)dto.ProbabilityPercent
-                : null;
+            data.ProbabilityPercent = dto.ProbabilityPercent != null ? (int?)dto.ProbabilityPercent : null;
             data.CheckInTime = dto.CheckInTime;
             data.CheckOutTime = dto.CheckOutTime;
             data.Latitude = latitude;
@@ -287,10 +285,10 @@ namespace VisitTracking.Application.Services
             if (data == null)
                 return;
 
-            var currentEmployeeId = _currentUserService.GetCurrentEmployeeId();
-            var designation = _currentUserService.GetCurrentDesignation();
-            var role = _currentUserService.GetCurrentRole();
-            var currentUserId = _currentUserService.GetCurrentUserId();
+            var currentEmployeeId = _currentUserService.EmployeeId;
+            var designation = _currentUserService.Designation;
+            var role = GetCurrentRole();
+            var currentUserId = _currentUserService.UserId;
 
             if (!CanEditVisit(data, currentEmployeeId, designation, role))
                 throw new Exception("Unauthorized access to delete this visit.");
@@ -300,7 +298,11 @@ namespace VisitTracking.Application.Services
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore
             });
 
-            await _repository.DeleteAsync(id);
+            data.IsActive = false;
+            data.UpdatedBy = currentUserId.ToString();
+            data.UpdatedDate = DateTime.UtcNow;
+
+            await _repository.UpdateAsync(data);
 
             await _auditService.CreateAsync(new AuditLogDto
             {
@@ -308,7 +310,13 @@ namespace VisitTracking.Application.Services
                 RecordId = data.Id,
                 ActionType = "DELETE",
                 OldValueJson = oldValueJson,
-                NewValueJson = null,
+                NewValueJson = JsonConvert.SerializeObject(new
+                {
+                    data.Id,
+                    data.IsActive,
+                    data.UpdatedBy,
+                    data.UpdatedDate
+                }),
                 ActionBy = currentUserId
             });
         }
@@ -325,10 +333,10 @@ namespace VisitTracking.Application.Services
             }
 
             var actionDateUtc = DateTime.UtcNow;
-            var currentUserId = _currentUserService.GetCurrentUserId();
-            var loggedInEmployeeId = _currentUserService.GetCurrentEmployeeId();
-            var currentDesignation = _currentUserService.GetCurrentDesignation();
-            var currentRole = _currentUserService.GetCurrentRole();
+            var currentUserId = _currentUserService.UserId;
+            var loggedInEmployeeId = _currentUserService.EmployeeId;
+            var currentDesignation = _currentUserService.Designation;
+            var currentRole = GetCurrentRole();
 
             await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -527,7 +535,7 @@ namespace VisitTracking.Application.Services
 
         private async Task<Employee> GetLoggedInEmployeeAsync()
         {
-            var loggedInEmployeeId = _currentUserService.GetCurrentEmployeeId();
+            var loggedInEmployeeId = _currentUserService.EmployeeId;
             if (loggedInEmployeeId <= 0)
             {
                 throw new Exception("Invalid employee context");
@@ -542,6 +550,12 @@ namespace VisitTracking.Application.Services
             }
 
             return employee;
+        }
+
+        private string? GetCurrentRole()
+        {
+            return _currentUserService.Principal?.FindFirstValue(ClaimTypes.Role)
+                ?? _currentUserService.Principal?.FindFirstValue("role");
         }
 
         private static bool IsAdminDesignation(string? designation)
