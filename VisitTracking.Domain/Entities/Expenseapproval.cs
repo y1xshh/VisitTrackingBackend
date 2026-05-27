@@ -6,7 +6,7 @@ public partial class ExpenseApproval
 {
     public int Id { get; set; }
 
-    public int? VisitId { get; set; }
+    public int VisitId { get; set; }
 
     public int? SubmittedBy { get; set; }
 
@@ -30,5 +30,5 @@ public partial class ExpenseApproval
 
     public DateTime? UpdatedDate { get; set; }
 
-    public virtual Visit? Visit { get; set; }
+    public virtual Visit Visit { get; set; } = null!;
 }

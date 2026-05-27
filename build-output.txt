@@ -1,0 +1,12 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  VisitTracking.Domain -> D:\YashSen\Visit\VisitTrackingBackend\VisitTracking.Domain\bin\Debug\net10.0\VisitTracking.Domain.dll
+  VisitTracking.Infrastructure -> D:\YashSen\Visit\VisitTrackingBackend\VisitTracking.Infrastructure\bin\Debug\net10.0\VisitTracking.Infrastructure.dll
+  VisitTracking.Application -> D:\YashSen\Visit\VisitTrackingBackend\VisitTracking.Applicationn\bin\Debug\net10.0\VisitTracking.Application.dll
+  VisitTracking.Api -> D:\YashSen\Visit\VisitTrackingBackend\VisitTracking.Api\bin\Debug\net10.0\VisitTracking.Api.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.93

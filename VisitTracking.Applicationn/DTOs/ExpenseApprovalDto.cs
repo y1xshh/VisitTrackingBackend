@@ -2,7 +2,7 @@ namespace VisitTracking.Application.DTOs
 {
     public class ExpenseApprovalDto
     {
-        public int? VisitId { get; set; }
+        public int VisitId { get; set; }
         public int? SubmittedBy { get; set; }
         public int? ApprovedBy { get; set; }
         public string? ApprovalStatus { get; set; }

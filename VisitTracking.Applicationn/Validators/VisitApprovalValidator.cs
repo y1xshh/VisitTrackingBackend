@@ -7,13 +7,11 @@ namespace VisitTracking.Application.Validators
     {
         public VisitApprovalValidator()
         {
+            RuleFor(x => x.ForwardTo)
+                .MaximumLength(150);
+
             RuleFor(x => x.Remark)
                 .MaximumLength(500);
-
-            RuleFor(x => x)
-                .Must(x => !string.IsNullOrWhiteSpace(x.Remark))
-                .When(x => !x.IsApproved)
-                .WithMessage("Remark is required when rejecting visit.");
         }
     }
 }

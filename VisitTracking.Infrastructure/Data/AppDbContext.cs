@@ -147,7 +147,11 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.UpdatedBy).HasMaxLength(50).HasColumnName("updated_by");
             entity.Property(e => e.UpdatedDate).ValueGeneratedOnAddOrUpdate().HasColumnType("datetime").HasColumnName("updated_date");
 
-            entity.HasOne(d => d.Visit).WithMany(p => p.ExpenseApprovals).HasForeignKey(d => d.VisitId).HasConstraintName("expenseapprovals_ibfk_1");
+            entity.HasOne(d => d.Visit)
+                .WithMany(p => p.ExpenseApprovals)
+                .HasForeignKey(d => d.VisitId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("expenseapprovals_ibfk_1");
         });
 
         modelBuilder.Entity<Expenserate>(entity =>

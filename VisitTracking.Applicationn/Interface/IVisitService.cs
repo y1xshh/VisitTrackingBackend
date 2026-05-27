@@ -12,6 +12,8 @@ namespace VisitTracking.Application.Interface
 
         Task<ApiResponse<VisitApprovalResponseDto>> ApproveVisitAsync(
             int visitId,
-            VisitApprovalRequestDto request);
+            VisitApprovalRequestDto request,
+            string? userId,
+            string? role);
     }
 }

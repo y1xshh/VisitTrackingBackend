@@ -27,14 +27,32 @@ public class ExpenseApprovalRepository : IExpenseApprovalRepository
 
     public async Task AddAsync(ExpenseApproval entity)
     {
-        await _context.ExpenseApprovals.AddAsync(entity);
-        await _context.SaveChangesAsync();
+        await ValidateVisitExistsAsync(entity.VisitId);
+
+        try
+        {
+            await _context.ExpenseApprovals.AddAsync(entity);
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new Exception("Failed to save Expense Approval. Invalid foreign key.", ex);
+        }
     }
 
     public async Task UpdateAsync(ExpenseApproval entity)
     {
-        _context.ExpenseApprovals.Update(entity);
-        await _context.SaveChangesAsync();
+        await ValidateVisitExistsAsync(entity.VisitId);
+
+        try
+        {
+            _context.ExpenseApprovals.Update(entity);
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new Exception("Failed to update Expense Approval. Invalid foreign key.", ex);
+        }
     }
 
     public async Task DeleteAsync(int id)
@@ -44,6 +62,15 @@ public class ExpenseApprovalRepository : IExpenseApprovalRepository
         {
             _context.ExpenseApprovals.Remove(data);
             await _context.SaveChangesAsync();
+        }
+    }
+
+    private async Task ValidateVisitExistsAsync(int visitId)
+    {
+        var visitExists = await _context.Visits.AnyAsync(x => x.Id == visitId);
+        if (!visitExists)
+        {
+            throw new Exception($"Visit with Id {visitId} does not exist.");
         }
     }
 }

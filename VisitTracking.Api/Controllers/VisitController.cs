@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using VisitTracking.Application.DTOs;
 using VisitTracking.Application.Interface;
 
@@ -53,7 +54,11 @@ public class VisitController : ControllerBase
     [HttpPut("{visitId:int}/approval")]
     public async Task<IActionResult> ApproveVisit(int visitId, [FromBody] VisitApprovalRequestDto request)
     {
-        var result = await _service.ApproveVisitAsync(visitId, request);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("UserId");
+        var role = User.FindFirstValue(ClaimTypes.Role);
+
+        var result = await _service.ApproveVisitAsync(visitId, request, userId, role);
 
         if (!result.Success)
         {

@@ -323,7 +323,9 @@ namespace VisitTracking.Application.Services
 
         public async Task<ApiResponse<VisitApprovalResponseDto>> ApproveVisitAsync(
             int visitId,
-            VisitApprovalRequestDto request)
+            VisitApprovalRequestDto request,
+            string? userId,
+            string? role)
         {
             var validation = new VisitApprovalValidator().Validate(request);
             if (!validation.IsValid)
@@ -332,11 +334,22 @@ namespace VisitTracking.Application.Services
                 return ApiResponse<VisitApprovalResponseDto>.FailResponse(message);
             }
 
+            var currentUserId = ResolveUserId(userId);
+            if (currentUserId <= 0)
+            {
+                return ApiResponse<VisitApprovalResponseDto>.FailResponse("Invalid user context.");
+            }
+
+            var normalizedRole = NormalizeRole(role ?? GetCurrentRole());
+            var canForward = IsForwardingRole(normalizedRole);
+            var canFinalApprove = IsFinalApproverRole(normalizedRole);
+
+            if (!canForward && !canFinalApprove)
+            {
+                return ApiResponse<VisitApprovalResponseDto>.FailResponse("Unauthorized approval role.");
+            }
+
             var actionDateUtc = DateTime.UtcNow;
-            var currentUserId = _currentUserService.UserId;
-            var loggedInEmployeeId = _currentUserService.EmployeeId;
-            var currentDesignation = _currentUserService.Designation;
-            var currentRole = GetCurrentRole();
 
             await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -352,20 +365,13 @@ namespace VisitTracking.Application.Services
                     return ApiResponse<VisitApprovalResponseDto>.FailResponse("Visit not found.");
                 }
 
-                if (!CanApproveVisit(visit, loggedInEmployeeId, currentDesignation, currentRole))
-                {
-                    return ApiResponse<VisitApprovalResponseDto>.FailResponse("Unauthorized approval.");
-                }
-
-                if (visit.Status != VisitStatus.Pending)
+                if (visit.Status is VisitStatus.Approved or VisitStatus.Rejected or VisitStatus.Cancelled or VisitStatus.Completed)
                 {
                     return ApiResponse<VisitApprovalResponseDto>.FailResponse(
                         $"Visit already processed. Current status: {visit.Status}.");
                 }
 
                 var previousStatus = visit.Status;
-                var newStatus = request.IsApproved ? VisitStatus.Approved : VisitStatus.Rejected;
-
                 var oldVisitSnapshot = new
                 {
                     visit.Id,
@@ -403,15 +409,117 @@ namespace VisitTracking.Application.Services
                     visit.UpdatedDate
                 };
 
-                visit.Status = newStatus;
+                if (canForward && !canFinalApprove)
+                {
+                    if (string.IsNullOrWhiteSpace(request.ForwardTo))
+                    {
+                        return ApiResponse<VisitApprovalResponseDto>.FailResponse("ForwardTo is required for forwarding.");
+                    }
+
+                    visit.Status = VisitStatus.Forwarded;
+                    visit.UpdatedBy = currentUserId.ToString();
+                    visit.UpdatedDate = actionDateUtc;
+
+                    var approvalHistory = new VisitApprovalHistory
+                    {
+                        VisitId = visit.Id,
+                        PreviousStatus = previousStatus.ToString(),
+                        NewStatus = VisitStatus.Forwarded.ToString(),
+                        ActionByUserId = currentUserId,
+                        ActionDateUtc = actionDateUtc,
+                        IpAddress = TryGetClientIpAddress(),
+                        Remark = $"Forwarded to {request.ForwardTo}. {request.Remark}".Trim(),
+                        IsActive = true,
+                        InsertedBy = currentUserId.ToString(),
+                        InsertedDate = actionDateUtc,
+                        UpdatedBy = currentUserId.ToString(),
+                        UpdatedDate = actionDateUtc
+                    };
+
+                    var auditLog = new Auditlog
+                    {
+                        TableName = "visits",
+                        RecordId = visit.Id,
+                        ActionType = "UPDATE",
+                        OldValueJson = JsonConvert.SerializeObject(oldVisitSnapshot, new JsonSerializerSettings
+                        {
+                            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                        }),
+                        NewValueJson = JsonConvert.SerializeObject(new
+                        {
+                            visit.Id,
+                            visit.VisitCode,
+                            Status = VisitStatus.Forwarded.ToString(),
+                            visit.EmployeeId,
+                            visit.ReportingManagerId,
+                            visit.CompanyId,
+                            visit.OrganisationId,
+                            visit.DepartmentId,
+                            visit.ContactPersonId,
+                            visit.VisitPurposeId,
+                            visit.DiscussionSummary,
+                            visit.NextAction,
+                            visit.NextFollowUpDate,
+                            visit.VehicleTypeId,
+                            visit.DistanceKm,
+                            visit.RateAppliedPerKm,
+                            visit.TravelExpenseAmount,
+                            visit.FunnelStageId,
+                            visit.OutcomeTypeId,
+                            visit.ExpectedBusinessValue,
+                            visit.ActualBusinessValue,
+                            visit.ProbabilityPercent,
+                            visit.CheckInTime,
+                            visit.CheckOutTime,
+                            visit.Latitude,
+                            visit.Longitude,
+                            visit.Remarks,
+                            visit.AttachmentPath,
+                            visit.IsActive,
+                            visit.InsertedBy,
+                            visit.InsertedDate,
+                            visit.UpdatedBy,
+                            visit.UpdatedDate
+                        }, new JsonSerializerSettings
+                        {
+                            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                        }),
+                        ActionBy = currentUserId,
+                        IsActive = true,
+                        InsertedBy = currentUserId.ToString(),
+                        InsertedDate = actionDateUtc,
+                        UpdatedBy = currentUserId.ToString(),
+                        UpdatedDate = actionDateUtc
+                    };
+
+                    await _context.VisitApprovalHistories.AddAsync(approvalHistory);
+                    await _context.Auditlogs.AddAsync(auditLog);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return ApiResponse<VisitApprovalResponseDto>.SuccessResponse(new VisitApprovalResponseDto
+                    {
+                        VisitId = visit.Id,
+                        Status = VisitStatus.Forwarded.ToString(),
+                        ActionDateUtc = actionDateUtc,
+                        Message = $"Visit {visit.Id} forwarded to {request.ForwardTo}."
+                    });
+                }
+
+                if (!canFinalApprove)
+                {
+                    return ApiResponse<VisitApprovalResponseDto>.FailResponse("Unauthorized approval role.");
+                }
+
+                visit.Status = VisitStatus.Approved;
                 visit.UpdatedBy = currentUserId.ToString();
                 visit.UpdatedDate = actionDateUtc;
 
-                var approvalHistory = new VisitApprovalHistory
+                var approvalHistoryFinal = new VisitApprovalHistory
                 {
                     VisitId = visit.Id,
                     PreviousStatus = previousStatus.ToString(),
-                    NewStatus = newStatus.ToString(),
+                    NewStatus = VisitStatus.Approved.ToString(),
                     ActionByUserId = currentUserId,
                     ActionDateUtc = actionDateUtc,
                     IpAddress = TryGetClientIpAddress(),
@@ -423,7 +531,7 @@ namespace VisitTracking.Application.Services
                     UpdatedDate = actionDateUtc
                 };
 
-                var auditLog = new Auditlog
+                var auditLogFinal = new Auditlog
                 {
                     TableName = "visits",
                     RecordId = visit.Id,
@@ -436,7 +544,7 @@ namespace VisitTracking.Application.Services
                     {
                         visit.Id,
                         visit.VisitCode,
-                        Status = newStatus.ToString(),
+                        Status = VisitStatus.Approved.ToString(),
                         visit.EmployeeId,
                         visit.ReportingManagerId,
                         visit.CompanyId,
@@ -479,17 +587,12 @@ namespace VisitTracking.Application.Services
                     UpdatedDate = actionDateUtc
                 };
 
-                await _context.VisitApprovalHistories.AddAsync(approvalHistory);
-                await _context.Auditlogs.AddAsync(auditLog);
-
-                await SendApprovalNotificationAsync(visit, request);
-
                 var expenseApproval = new ExpenseApproval
                 {
                     VisitId = visit.Id,
                     SubmittedBy = visit.EmployeeId,
                     ApprovedBy = currentUserId,
-                    ApprovalStatus = newStatus.ToString(),
+                    ApprovalStatus = VisitStatus.Approved.ToString(),
                     ApprovalRemarks = request.Remark,
                     SubmittedAt = visit.InsertedDate,
                     ApprovedAt = actionDateUtc,
@@ -500,22 +603,22 @@ namespace VisitTracking.Application.Services
                     UpdatedDate = actionDateUtc
                 };
 
+                await _context.VisitApprovalHistories.AddAsync(approvalHistoryFinal);
+                await _context.Auditlogs.AddAsync(auditLogFinal);
                 await _context.ExpenseApprovals.AddAsync(expenseApproval);
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                var response = new VisitApprovalResponseDto
+                await SendApprovalNotificationAsync(visit, request.Remark);
+
+                return ApiResponse<VisitApprovalResponseDto>.SuccessResponse(new VisitApprovalResponseDto
                 {
                     VisitId = visit.Id,
-                    Status = newStatus.ToString(),
+                    Status = VisitStatus.Approved.ToString(),
                     ActionDateUtc = actionDateUtc,
-                    Message = request.IsApproved
-                        ? $"Visit {visit.Id} Approved"
-                        : $"Visit {visit.Id} Rejected"
-                };
-
-                return ApiResponse<VisitApprovalResponseDto>.SuccessResponse(response);
+                    Message = $"Visit {visit.Id} approved successfully."
+                });
             }
             catch (Exception ex)
             {
@@ -558,6 +661,17 @@ namespace VisitTracking.Application.Services
                 ?? _currentUserService.Principal?.FindFirstValue("role");
         }
 
+        private static string NormalizeRole(string? role)
+        {
+            var value = role ?? string.Empty;
+            return new string(value.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+        }
+
+        private static int ResolveUserId(string? userId)
+        {
+            return int.TryParse(userId, out var parsedUserId) ? parsedUserId : 0;
+        }
+
         private static bool IsAdminDesignation(string? designation)
         {
             return !string.IsNullOrWhiteSpace(designation) &&
@@ -570,18 +684,24 @@ namespace VisitTracking.Application.Services
                    designation.Contains("manager", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool IsSuperAdminRole(string? role)
+        private static bool IsFinalApproverRole(string? role)
         {
-            return !string.IsNullOrWhiteSpace(role) &&
-                   role.Contains("super admin", StringComparison.OrdinalIgnoreCase);
+            var normalized = NormalizeRole(role);
+            return normalized == "admin" || normalized == "superadmin";
+        }
+
+        private static bool IsForwardingRole(string? role)
+        {
+            var normalized = NormalizeRole(role);
+            return normalized == "employee" || normalized == "teamlead" || normalized == "manager";
         }
 
         private static bool CanViewVisit(Visit visit, int currentEmployeeId, string? designation, string? role)
         {
-            if (IsSuperAdminRole(role) || IsAdminDesignation(designation))
+            if (IsFinalApproverRole(role) || IsAdminDesignation(designation))
                 return true;
 
-            if (IsManagerDesignation(designation))
+            if (IsManagerDesignation(designation) || NormalizeRole(role) == "manager")
                 return visit.ReportingManagerId == currentEmployeeId;
 
             return visit.EmployeeId == currentEmployeeId;
@@ -589,10 +709,10 @@ namespace VisitTracking.Application.Services
 
         private static bool CanEditVisit(Visit visit, int currentEmployeeId, string? designation, string? role)
         {
-            if (IsSuperAdminRole(role) || IsAdminDesignation(designation))
+            if (IsFinalApproverRole(role) || IsAdminDesignation(designation))
                 return true;
 
-            if (IsManagerDesignation(designation))
+            if (IsManagerDesignation(designation) || NormalizeRole(role) == "manager")
                 return visit.ReportingManagerId == currentEmployeeId || visit.EmployeeId == currentEmployeeId;
 
             return visit.EmployeeId == currentEmployeeId;
@@ -600,7 +720,7 @@ namespace VisitTracking.Application.Services
 
         private static bool CanApproveVisit(Visit visit, int currentEmployeeId, string? designation, string? role)
         {
-            if (IsSuperAdminRole(role) || IsAdminDesignation(designation))
+            if (IsFinalApproverRole(role) || IsAdminDesignation(designation))
                 return true;
 
             return visit.ReportingManagerId == currentEmployeeId;
@@ -612,16 +732,16 @@ namespace VisitTracking.Application.Services
             string? designation,
             string? role)
         {
-            if (IsSuperAdminRole(role) || IsAdminDesignation(designation))
+            if (IsFinalApproverRole(role) || IsAdminDesignation(designation))
                 return visits;
 
-            if (IsManagerDesignation(designation))
+            if (IsManagerDesignation(designation) || NormalizeRole(role) == "manager")
                 return visits.Where(v => v.ReportingManagerId == currentEmployeeId);
 
             return visits.Where(v => v.EmployeeId == currentEmployeeId);
         }
 
-        private async Task SendApprovalNotificationAsync(Visit visit, VisitApprovalRequestDto request)
+        private async Task SendApprovalNotificationAsync(Visit visit, string? remark)
         {
             var employee = visit.Employee;
             var user = employee?.User;
@@ -632,11 +752,10 @@ namespace VisitTracking.Application.Services
                 throw new InvalidOperationException($"Approval notification failed because recipient email is missing for VisitId {visit.Id}.");
             }
 
-            var statusText = request.IsApproved ? "Approved" : "Rejected";
-            var subject = $"Visit {visit.Id} {statusText}";
-            var body = request.IsApproved
-                ? $"Your visit #{visit.Id} has been approved.<br/><b>Remark:</b> {request.Remark}"
-                : $"Your visit #{visit.Id} has been rejected.<br/><b>Remark:</b> {request.Remark}";
+            var subject = $"Visit {visit.Id} Approved";
+            var body = string.IsNullOrWhiteSpace(remark)
+                ? $"Your visit #{visit.Id} has been approved."
+                : $"Your visit #{visit.Id} has been approved.<br/><b>Remark:</b> {remark}";
 
             await _emailService.SendEmailAsync(recipientEmail, subject, body);
         }
