@@ -4,7 +4,7 @@ namespace VisitTracking.Domain.RepositoryInterfaces
 {
     public interface IVisitRepository
     {
-        Task<List<Visit>> GetAllAsync();
+        Task<List<dynamic>> GetAllAsync(int flag, int employeeId);
         Task<Visit?> GetByIdAsync(int id);
         Task AddAsync(Visit entity);
         Task UpdateAsync(Visit entity);

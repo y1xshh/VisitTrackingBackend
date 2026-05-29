@@ -16,10 +16,12 @@ public class VisitController : ControllerBase
         _service = service;
     }
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<VisitResponseDto>>> GetAll()
+    [HttpGet("/{flag}")]
+    public async Task<IActionResult> GetAll(int flag)
     {
-        return Ok(await _service.GetAllAsync());
+        var data = await _service.GetAllAsync(flag);
+
+        return Ok(data);
     }
 
     [HttpPost]
@@ -51,19 +53,10 @@ public class VisitController : ControllerBase
         return Ok("Visit Deleted");
     }
 
-    [HttpPut("{visitId:int}/approval")]
+    [HttpPost("{visitId}/approve")]
     public async Task<IActionResult> ApproveVisit(int visitId, [FromBody] VisitApprovalRequestDto request)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("UserId");
-        var role = User.FindFirstValue(ClaimTypes.Role);
-
-        var result = await _service.ApproveVisitAsync(visitId, request, userId, role);
-
-        if (!result.Success)
-        {
-            return BadRequest(result);
-        }
+        var result = await _service.ApproveVisitAsync(visitId, request);
 
         return Ok(result);
     }

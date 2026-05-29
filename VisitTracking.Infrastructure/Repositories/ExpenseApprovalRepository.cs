@@ -13,16 +13,12 @@ public class ExpenseApprovalRepository : IExpenseApprovalRepository
 
     public async Task<IEnumerable<ExpenseApproval>> GetAllAsync()
     {
-        return await _context.ExpenseApprovals
-            .Include(x => x.Visit)
-            .ToListAsync();
+        return await _context.ExpenseApprovals.ToListAsync();
     }
 
     public async Task<ExpenseApproval?> GetByIdAsync(int id)
     {
-        return await _context.ExpenseApprovals
-            .Include(x => x.Visit)
-            .FirstOrDefaultAsync(x => x.Id == id);
+        return await _context.ExpenseApprovals.FirstOrDefaultAsync(x => x.Id == id);
     }
 
     public async Task AddAsync(ExpenseApproval entity)
@@ -65,12 +61,17 @@ public class ExpenseApprovalRepository : IExpenseApprovalRepository
         }
     }
 
-    private async Task ValidateVisitExistsAsync(int visitId)
+    private async Task ValidateVisitExistsAsync(int? visitId)
     {
-        var visitExists = await _context.Visits.AnyAsync(x => x.Id == visitId);
+        if (!visitId.HasValue)
+        {
+            throw new Exception("VisitId is required.");
+        }
+
+        var visitExists = await _context.Visits.AnyAsync(x => x.Id == visitId.Value);
         if (!visitExists)
         {
-            throw new Exception($"Visit with Id {visitId} does not exist.");
+            throw new Exception($"Visit with Id {visitId.Value} does not exist.");
         }
     }
 }
