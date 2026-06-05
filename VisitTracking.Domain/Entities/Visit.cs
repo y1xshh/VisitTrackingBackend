@@ -13,6 +13,8 @@ public partial class Visit
 
     public int? EmployeeId { get; set; }
 
+    public int? ReportingManagerId { get; set; }
+
     public int? CompanyId { get; set; }
 
     public int? OrganisationId { get; set; }
@@ -47,7 +49,9 @@ public partial class Visit
 
     public int? ProbabilityPercent { get; set; }
 
-    public string? Status { get; set; }
+    public VisitStatus Status { get; set; } = VisitStatus.Pending;
+
+    public string? WorkflowStatus { get; set; }
 
     public DateTime? CheckInTime { get; set; }
 
@@ -75,7 +79,9 @@ public partial class Visit
 
     public virtual Employee? Employee { get; set; }
 
-    public virtual ICollection<Expenseapproval> Expenseapprovals { get; set; } = new List<Expenseapproval>();
+    public virtual Employee? ReportingManager { get; set; }
+
+    public virtual ICollection<ExpenseApproval> ExpenseApprovals { get; set; } = new List<ExpenseApproval>();
 
     public virtual ICollection<Visitattachment> Visitattachments { get; set; } = new List<Visitattachment>();
 

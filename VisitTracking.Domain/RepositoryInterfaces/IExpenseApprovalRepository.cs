@@ -2,9 +2,9 @@
 
 public interface IExpenseApprovalRepository
 {
-    Task<IEnumerable<Expenseapproval>> GetAllAsync();
-    Task<Expenseapproval?> GetByIdAsync(int id);
-    Task AddAsync(Expenseapproval entity);
-    Task UpdateAsync(Expenseapproval entity);
+    Task<IEnumerable<ExpenseApproval>> GetAllAsync();
+    Task<ExpenseApproval?> GetByIdAsync(int id);
+    Task AddAsync(ExpenseApproval entity);
+    Task UpdateAsync(ExpenseApproval entity);
     Task DeleteAsync(int id);
 }

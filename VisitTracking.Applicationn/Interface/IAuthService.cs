@@ -14,5 +14,7 @@ namespace VisitTracking.Application.Interface
         Task<User> GetByEmailAsync(string email);
         Task<User> GetUserByIdAsync(int userId);
         Task UpdateAsync(User user);
+        
+        Task<LoginResponseDto> FirstLoginChangePasswordAsync(FirstLoginChangePasswordDto dto);
     }
 }

@@ -33,8 +33,8 @@ public class AuthController(IAuthService service) : ControllerBase
 
     }
   
-    [HttpPost("change-password")]
-    [AllowAnonymous] 
+[HttpPost("change-password")]
+    [Authorize] 
     public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
     {
         var email = dto.Email?.Trim();
@@ -59,4 +59,15 @@ public class AuthController(IAuthService service) : ControllerBase
 
         return Ok("Password changed successfully");
     }
+
+    [HttpPost("first-login-change-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> FirstLoginChangePassword(FirstLoginChangePasswordDto dto)
+    {
+        var result = await _service.FirstLoginChangePasswordAsync(dto);
+        if (result.Token != string.Empty)
+            return Ok(result);
+        return BadRequest(result);
+    }
 }
+

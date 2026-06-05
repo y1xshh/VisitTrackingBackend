@@ -1,35 +1,48 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace VisitTracking.Domain.Entities;
-
-public partial class Expenseapproval
+namespace VisitTracking.Domain.Entities
 {
-    public int Id { get; set; }
+    [Table("expenseapprovals")]
+    public class ExpenseApproval
+    {
+        [Column("Id")]
+        public int Id { get; set; }
 
-    public int? VisitId { get; set; }
+        [Column("VisitId")]
+        public int? VisitId { get; set; }
 
-    public int? SubmittedBy { get; set; }
+        [Column("SubmittedBy")]
+        public int? SubmittedBy { get; set; }
 
-    public int? ApprovedBy { get; set; }
+        [Column("ApprovedBy")]
+        public int? ApprovedBy { get; set; }
 
-    public string? ApprovalStatus { get; set; }
+        [Column("ApprovalStatus")]
+        public string? ApprovalStatus { get; set; }
 
-    public string? ApprovalRemarks { get; set; }
+        [Column("ApprovalRemarks")]
+        public string? ApprovalRemarks { get; set; }
 
-    public DateTime? SubmittedAt { get; set; }
+        [Column("SubmittedAt")]
+        public DateTime? SubmittedAt { get; set; }
 
-    public DateTime? ApprovedAt { get; set; }
+        [Column("ApprovedAt")]
+        public DateTime? ApprovedAt { get; set; }
 
-    public bool? IsActive { get; set; }
+        [Column("is_active")]
+        public bool? IsActive { get; set; }
 
-    public string? InsertedBy { get; set; }
+        [Column("inserted_by")]
+        public string? InsertedBy { get; set; }
 
-    public DateTime? InsertedDate { get; set; }
+        [Column("inserted_date")]
+        public DateTime? InsertedDate { get; set; }
 
-    public string? UpdatedBy { get; set; }
+        [Column("updated_by")]
+        public string? UpdatedBy { get; set; }
 
-    public DateTime? UpdatedDate { get; set; }
-
-    public virtual Visit? Visit { get; set; }
+        [Column("updated_date")]
+        public DateTime? UpdatedDate { get; set; }
+    }
 }

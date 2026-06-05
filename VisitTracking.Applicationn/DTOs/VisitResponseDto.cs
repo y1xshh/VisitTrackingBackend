@@ -7,6 +7,7 @@ namespace VisitTracking.Application.DTOs
         public DateTime? VisitDate { get; set; }
 
         public int? EmployeeId { get; set; }
+        public int? ReportingManagerId { get; set; }
         public int? CompanyId { get; set; }
         public int? OrganisationId { get; set; }
         public int? DepartmentId { get; set; }

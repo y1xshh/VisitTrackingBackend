@@ -89,16 +89,22 @@ namespace VisitTracking.Application.Services
                 };
             }
 
-            //✅ Check first login
+            // First login - return temp token for password change
             if (user.IsFirstLogin == true)
             {
+                var tempToken = GenerateTempJwt(user.Email!);
+                var profile = await GetLoginProfileAsync(user);
                 return new LoginResponseDto
                 {
                     Token = string.Empty,
                     Role = string.Empty,
-                    EmployeeId = 0,
-                    IsFirstLogin = false,
-                    Message = "Invalid credentials"
+                    EmployeeId = profile.EmployeeId,
+                    Name = profile.Name,
+                    Department = profile.Department,
+                    IsFirstLogin = true,
+                    IsFirstLoginRequired = true,
+                    TempToken = tempToken,
+                    Message = "First login detected. Please change your password using the temp token."
                 };
             }
 
@@ -107,28 +113,92 @@ namespace VisitTracking.Application.Services
                 .Select(r => r.RoleName)
                 .FirstOrDefaultAsync();
 
-            var employeeId = await _context.Set<Employee>()
-                .Where(e => e.UserId == user.Id)
-                .Select(e => e.Id)
-                .FirstOrDefaultAsync();
-
-       
+            var loginProfile = await GetLoginProfileAsync(user);
 
             return new LoginResponseDto
             {
-                Token = GenerateJwt(user, role ?? string.Empty),
+                Token = GenerateJwt(user, role ?? string.Empty, loginProfile.EmployeeId, loginProfile.Designation),
                 Role = role ?? string.Empty,
-                EmployeeId = employeeId,
+                EmployeeId = loginProfile.EmployeeId,
+                Name = loginProfile.Name,
+                Department = loginProfile.Department,
                 IsFirstLogin = user.IsFirstLogin ?? false,
                 Message = "Login successful"
             };
         }
 
-        private string GenerateJwt(User user, string role)
+        private async Task<(int EmployeeId, string Name, string Department, string Designation)> GetLoginProfileAsync(User user)
+        {
+            var employee = await _context.Set<Employee>()
+                .Include(e => e.Designation)
+                .Where(e => e.UserId == user.Id)
+                .FirstOrDefaultAsync();
+
+            var departmentId = user.DepartmentId;
+
+            if (!departmentId.HasValue && user.DesignationId.HasValue)
+            {
+                departmentId = await _context.Set<MstDesignation>()
+                    .Where(d => d.Id == user.DesignationId.Value)
+                    .Select(d => d.DepartmentId)
+                    .FirstOrDefaultAsync();
+            }
+
+            var department = departmentId.HasValue
+                ? await _context.Set<Department>()
+                    .Where(d => d.Id == departmentId.Value)
+                    .Select(d => d.DepartmentName)
+                    .FirstOrDefaultAsync()
+                : string.Empty;
+
+            var designation = employee?.Designation?.DesignationName ??
+                (user.DesignationId.HasValue
+                    ? await _context.Set<MstDesignation>()
+                        .Where(d => d.Id == user.DesignationId.Value)
+                        .Select(d => d.DesignationName)
+                        .FirstOrDefaultAsync()
+                    : string.Empty);
+
+            return (
+                employee?.Id ?? 0,
+                user.FullName ?? string.Empty,
+                department ?? string.Empty,
+                designation ?? string.Empty
+            );
+        }
+
+        private string GenerateTempJwt(string email)
         {
             var claims = new[]
             {
-                new Claim("id", user.Id.ToString()),
+                new Claim(ClaimTypes.Email, email),
+                new Claim("temp", "firstlogin")
+            };
+
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
+            );
+
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(5),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private string GenerateJwt(User user, string role, int employeeId, string designation)
+        {
+            var claims = new[]
+            {
+                new Claim("UserId", user.Id.ToString()),
+                new Claim("EmployeeId", employeeId.ToString()),
+                new Claim("Designation", designation),
                 new Claim(ClaimTypes.Name, user.FullName ?? string.Empty),
                 new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
                 new Claim(ClaimTypes.Role, role),
@@ -398,6 +468,73 @@ namespace VisitTracking.Application.Services
                 throw new Exception("User not found");
 
             return user;
+        }
+
+        public async Task<LoginResponseDto> FirstLoginChangePasswordAsync(FirstLoginChangePasswordDto dto)
+        {
+            // Parse and validate temp token
+            var handler = new JwtSecurityTokenHandler();
+            var jsonToken = handler.ReadJwtToken(dto.TempToken);
+
+            if (jsonToken.ValidTo < DateTime.UtcNow)
+                return new LoginResponseDto { Message = "Temp token expired", IsFirstLoginRequired = false };
+
+            var emailClaim = jsonToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(emailClaim) || jsonToken.Claims.FirstOrDefault(c => c.Type == "temp" && c.Value == "firstlogin") == null)
+                return new LoginResponseDto { Message = "Invalid temp token", IsFirstLoginRequired = false };
+
+            var user = await _repo.GetByEmailAsync(emailClaim);
+            if (user == null || user.IsFirstLogin != true)
+                return new LoginResponseDto { Message = "Invalid first login token", IsFirstLoginRequired = false };
+
+            // Validate password policy
+            if (!IsValidPassword(dto.NewPassword))
+                return new LoginResponseDto { Message = "Password must be 8+ chars with Upper, Lower, Digit, Special char", IsFirstLoginRequired = false };
+
+            // Update password
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            user.IsFirstLogin = false;
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            // Audit log
+            await _auditService.CreateAsync(new AuditLogDto
+            {
+                TableName = "Users",
+                RecordId = user.Id,
+                ActionType = "FirstLoginPasswordChange",
+                ActionBy = 0, // system
+                NewValueJson = "{}" // no sensitive data
+            });
+
+            // Get login data
+            var role = await _context.Set<Role>()
+                .Where(r => r.Id == user.RoleId)
+                .Select(r => r.RoleName)
+                .FirstOrDefaultAsync();
+
+            var loginProfile = await GetLoginProfileAsync(user);
+
+            return new LoginResponseDto
+            {
+                Token = GenerateJwt(user, role ?? string.Empty, loginProfile.EmployeeId, loginProfile.Designation),
+                Role = role ?? string.Empty,
+                EmployeeId = loginProfile.EmployeeId,
+                Name = loginProfile.Name,
+                Department = loginProfile.Department,
+                IsFirstLogin = false,
+                Message = "Password changed successfully. Welcome!"
+            };
+        }
+
+        private static bool IsValidPassword(string password)
+        {
+            if (password.Length < 8) return false;
+            if (!System.Text.RegularExpressions.Regex.IsMatch(password, @"[A-Z]")) return false;
+            if (!System.Text.RegularExpressions.Regex.IsMatch(password, @"[a-z]")) return false;
+            if (!System.Text.RegularExpressions.Regex.IsMatch(password, @"[0-9]")) return false;
+            if (!System.Text.RegularExpressions.Regex.IsMatch(password, @"[!@#$%^&*]")) return false;
+            return true;
         }
     }
 }
