@@ -139,6 +139,7 @@ namespace VisitTracking.Application.Services
                 ActualBusinessValue = dto.ActualBusinessValue,
                 ProbabilityPercent = dto.ProbabilityPercent != null ? (int?)dto.ProbabilityPercent : null,
                 Status = VisitStatus.Pending,
+                WorkflowStatus = "Draft",
                 CheckInTime = dto.CheckInTime,
                 CheckOutTime = dto.CheckOutTime,
                 Latitude = latitude,
@@ -333,6 +334,17 @@ namespace VisitTracking.Application.Services
                 return BuildApprovalFailureResponse(visitId, message);
             }
 
+            _logger.LogInformation("RAW ACTION = [{Action}]", request.Action);
+
+            var action = NormalizeAction(request.Action);
+
+            _logger.LogInformation("NORMALIZED ACTION = [{Action}]", action);
+
+            if (!IsForwardAction(action) && !IsApproveAction(action) && !IsRejectAction(action))
+            {
+                return BuildApprovalFailureResponse(visitId, "Invalid approval action.");
+            }
+
             var currentUserId = _currentUserService.UserId;
             if (currentUserId <= 0)
             {
@@ -343,7 +355,12 @@ namespace VisitTracking.Application.Services
             var canForward = IsForwardingRole(role);
             var canFinalApprove = IsFinalApproverRole(role);
 
-            if (!canForward && !canFinalApprove)
+            if (IsForwardAction(action) && !canForward && !canFinalApprove)
+            {
+                return BuildApprovalFailureResponse(visitId, "Unauthorized approval role.");
+            }
+
+            if ((IsApproveAction(action) || IsRejectAction(action)) && !canFinalApprove)
             {
                 return BuildApprovalFailureResponse(visitId, "Unauthorized approval role.");
             }
@@ -358,26 +375,33 @@ namespace VisitTracking.Application.Services
                 return BuildApprovalFailureResponse(visitId, "Visit not found");
             }
 
-            if (IsProcessedStatus(visit.Status))
+            if (IsProcessedWorkflow(visit.WorkflowStatus))
             {
                 return BuildApprovalFailureResponse(
                     visitId,
-                    $"Visit already processed. Current status: {visit.Status}",
+                    $"Visit already processed. Current workflow status: {visit.WorkflowStatus}",
+                    visit);
+            }
+
+            if (IsApproveAction(action) &&
+                !string.Equals(visit.WorkflowStatus, "PendingAdminApproval", StringComparison.OrdinalIgnoreCase))
+            {
+                return BuildApprovalFailureResponse(
+                    visitId,
+                    $"Visit is not ready for final approval. Current workflow status: {visit.WorkflowStatus}",
                     visit);
             }
 
             try
             {
-                var actionDateUtc = await ProcessApprovalAsync(visit, request, currentUserId, canForward, canFinalApprove);
+                var actionDateUtc = await ProcessApprovalAsync(visit, request, action, currentUserId);
 
                 return ApiResponse<VisitApprovalResponseDto>.SuccessResponse(new VisitApprovalResponseDto
                 {
                     VisitId = visit.Id,
-                    Status = visit.Status.ToString(),
+                    Status = visit.WorkflowStatus ?? visit.Status.ToString(),
                     ActionDateUtc = actionDateUtc,
-                    Message = visit.Status == VisitStatus.Forwarded
-                        ? $"Visit {visit.Id} forwarded to {request.ForwardTo}."
-                        : $"Visit {visit.Id} approved successfully."
+                    Message = BuildApprovalMessage(visit.Id, visit.WorkflowStatus ?? visit.Status.ToString(), request.ForwardTo)
                 });
             }
             catch (Exception ex)
@@ -399,37 +423,82 @@ namespace VisitTracking.Application.Services
                 Data = new VisitApprovalResponseDto
                 {
                     VisitId = visit?.Id ?? visitId,
-                    Status = visit?.Status.ToString() ?? string.Empty,
+                    Status = visit?.WorkflowStatus ?? visit?.Status.ToString() ?? string.Empty,
                     ActionDateUtc = visit?.UpdatedDate ?? DateTime.UtcNow
                 }
             };
         }
 
-        private static bool IsProcessedStatus(VisitStatus status)
+        private static bool IsProcessedWorkflow(string? workflowStatus)
         {
-            return status is VisitStatus.Approved or VisitStatus.Rejected or VisitStatus.Cancelled or VisitStatus.Completed;
+            if (string.IsNullOrWhiteSpace(workflowStatus))
+            {
+                return false;
+            }
+
+            return workflowStatus.Equals("Approved", StringComparison.OrdinalIgnoreCase)
+                || workflowStatus.Equals("Rejected", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeAction(string? action)
+        {
+            if (string.IsNullOrWhiteSpace(action))
+                return "approve";
+
+            action = action.Trim().ToLowerInvariant();
+
+            return action switch
+            {
+                "approve" => "approve",
+                "approved" => "approve",
+
+                "reject" => "reject",
+                "rejected" => "reject",
+
+                "forward" => "forward",
+                "forwarded" => "forward",
+
+                "forwardedtorm" => "forward",
+                "forwardedtomanager" => "forward",
+
+                _ => string.Empty
+            };
+        }
+
+        private static bool IsForwardAction(string? action)
+        {
+            return NormalizeAction(action) == "forward";
+        }
+
+        private static bool IsApproveAction(string? action)
+        {
+            return NormalizeAction(action) == "approve";
+        }
+
+        private static bool IsRejectAction(string? action)
+        {
+            return NormalizeAction(action) == "reject";
         }
 
         private async Task<DateTime> ProcessApprovalAsync(
             Visit visit,
             VisitApprovalRequestDto request,
-            int currentUserId,
-            bool canForward,
-            bool canFinalApprove)
+            string action,
+            int currentUserId)
         {
             ValidateApproval(visit);
 
             var actionDateUtc = DateTime.UtcNow;
-            var previousStatus = visit.Status;
-            var newStatus = UpdateVisitStatus(visit, request, canForward, canFinalApprove, currentUserId, actionDateUtc);
+            var previousWorkflowStatus = visit.WorkflowStatus ?? VisitStatus.Pending.ToString();
+            var newWorkflowStatus = UpdateVisitStatus(visit, request, action, currentUserId, actionDateUtc);
 
-            await AddApprovalHistory(visit, previousStatus, newStatus, request, currentUserId, actionDateUtc, canForward);
-            await AddAuditLogAsync(visit, previousStatus, newStatus, currentUserId, actionDateUtc);
-            await AddExpenseApprovalAsync(visit, request, newStatus, currentUserId, actionDateUtc);
+            await AddApprovalHistory(visit, previousWorkflowStatus, newWorkflowStatus, request, currentUserId, actionDateUtc);
+            await AddAuditLogAsync(visit, previousWorkflowStatus, newWorkflowStatus, currentUserId, actionDateUtc);
+            await AddExpenseApprovalAsync(visit, request, newWorkflowStatus, currentUserId, actionDateUtc);
 
             await _context.SaveChangesAsync();
 
-            if (newStatus == VisitStatus.Approved)
+            if (string.Equals(newWorkflowStatus, "Approved", StringComparison.OrdinalIgnoreCase))
             {
                 await SendApprovalMail(visit, request.Remark);
             }
@@ -439,57 +508,109 @@ namespace VisitTracking.Application.Services
 
         private static void ValidateApproval(Visit visit)
         {
-            if (visit.Status is VisitStatus.Approved or VisitStatus.Rejected or VisitStatus.Cancelled or VisitStatus.Completed)
+            if (IsProcessedWorkflow(visit.WorkflowStatus))
             {
-                throw new Exception($"Visit already processed. Current status: {visit.Status}.");
+                throw new Exception($"Visit already processed. Current workflow status: {visit.WorkflowStatus}.");
             }
         }
 
-        private static VisitStatus UpdateVisitStatus(
+        private static string UpdateVisitStatus(
             Visit visit,
             VisitApprovalRequestDto request,
-            bool canForward,
-            bool canFinalApprove,
+            string action,
             int currentUserId,
             DateTime actionDateUtc)
         {
-            if (canForward && !canFinalApprove)
+            switch (action)
             {
-                if (string.IsNullOrWhiteSpace(request.ForwardTo))
-                {
-                    throw new Exception("ForwardTo is required for forwarding.");
-                }
+                case "forward":
+                    if (string.IsNullOrWhiteSpace(request.ForwardTo))
+                    {
+                        throw new Exception("ForwardTo is required for forwarding.");
+                    }
 
-                visit.Status = VisitStatus.Forwarded;
-            }
-            else
-            {
-                visit.Status = VisitStatus.Approved;
+                    switch (visit.WorkflowStatus)
+                    {
+                        case null:
+                        case "":
+                        case "Draft":
+                            visit.WorkflowStatus = "ForwardedToRM";
+                            visit.Status = VisitStatus.ForwardedToRM;
+                            break;
+
+                        case "ForwardedToRM":
+                            visit.WorkflowStatus = "ForwardedToManager";
+                            visit.Status = VisitStatus.ForwardedToManager;
+                            break;
+
+                        case "ForwardedToManager":
+                            visit.WorkflowStatus = "PendingAdminApproval";
+                            visit.Status = VisitStatus.PendingAdminApproval;
+                            break;
+
+                        case "PendingAdminApproval":
+                            throw new Exception($"Cannot forward visit from status {visit.WorkflowStatus}");
+
+                        default:
+                            throw new Exception($"Cannot forward visit from status {visit.WorkflowStatus}");
+                    }
+
+                    break;
+
+                case "approve":
+                    visit.WorkflowStatus = "Approved";
+                    visit.Status = VisitStatus.Approved;
+                    break;
+
+                case "reject":
+                    visit.WorkflowStatus = "Rejected";
+                    visit.Status = VisitStatus.Rejected;
+                    break;
+
+                default:
+                    throw new Exception(
+                        $"Invalid approval action. Action Received = [{action}]"
+                    );
             }
 
             visit.UpdatedBy = currentUserId.ToString();
             visit.UpdatedDate = actionDateUtc;
-            return visit.Status;
+            return visit.WorkflowStatus ?? visit.Status.ToString();
+        }
+
+        private static string BuildApprovalMessage(
+            int visitId,
+            string workflowStatus,
+            string? forwardTo)
+        {
+            return workflowStatus switch
+            {
+                "ForwardedToRM" => $"Visit {visitId} forwarded to RM.",
+                "ForwardedToManager" => $"Visit {visitId} forwarded to Manager.",
+                "PendingAdminApproval" => $"Visit {visitId} forwarded for admin approval.",
+                "Approved" => $"Visit {visitId} approved successfully.",
+                "Rejected" => $"Visit {visitId} rejected successfully.",
+                _ => $"Visit {visitId} updated successfully."
+            };
         }
 
         private async Task AddApprovalHistory(
             Visit visit,
-            VisitStatus previousStatus,
-            VisitStatus newStatus,
+            string previousWorkflowStatus,
+            string newWorkflowStatus,
             VisitApprovalRequestDto request,
             int currentUserId,
-            DateTime actionDateUtc,
-            bool canForward)
+            DateTime actionDateUtc)
         {
-            var remark = canForward && !string.IsNullOrWhiteSpace(request.ForwardTo)
+            var remark = IsForwardAction(request.Action) && !string.IsNullOrWhiteSpace(request.ForwardTo)
                 ? $"Forwarded to {request.ForwardTo}. {request.Remark}".Trim()
                 : request.Remark;
 
             var history = new VisitApprovalHistory
             {
                 VisitId = visit.Id,
-                PreviousStatus = previousStatus.ToString(),
-                NewStatus = newStatus.ToString(),
+                PreviousStatus = previousWorkflowStatus,
+                NewStatus = newWorkflowStatus,
                 ActionByUserId = currentUserId,
                 ActionDateUtc = actionDateUtc,
                 IpAddress = TryGetClientIpAddress(),
@@ -506,8 +627,8 @@ namespace VisitTracking.Application.Services
 
         private async Task AddAuditLogAsync(
             Visit visit,
-            VisitStatus previousStatus,
-            VisitStatus newStatus,
+            string previousWorkflowStatus,
+            string newWorkflowStatus,
             int currentUserId,
             DateTime actionDateUtc)
         {
@@ -515,7 +636,8 @@ namespace VisitTracking.Application.Services
             {
                 visit.Id,
                 visit.VisitCode,
-                Status = previousStatus.ToString(),
+                Status = visit.Status.ToString(),
+                WorkflowStatus = previousWorkflowStatus,
                 visit.EmployeeId,
                 visit.ReportingManagerId,
                 visit.CompanyId,
@@ -561,7 +683,8 @@ namespace VisitTracking.Application.Services
                 {
                     visit.Id,
                     visit.VisitCode,
-                    Status = newStatus.ToString(),
+                    Status = visit.Status.ToString(),
+                    WorkflowStatus = newWorkflowStatus,
                     visit.EmployeeId,
                     visit.ReportingManagerId,
                     visit.CompanyId,
@@ -610,11 +733,11 @@ namespace VisitTracking.Application.Services
         private async Task AddExpenseApprovalAsync(
             Visit visit,
             VisitApprovalRequestDto request,
-            VisitStatus newStatus,
+            string newWorkflowStatus,
             int currentUserId,
             DateTime actionDateUtc)
         {
-            if (newStatus != VisitStatus.Approved)
+            if (!string.Equals(newWorkflowStatus, "Approved", StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }

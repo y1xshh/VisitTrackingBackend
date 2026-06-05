@@ -3,10 +3,12 @@ namespace VisitTracking.Domain.Entities
     public enum VisitStatus
     {
         Pending = 1,
-        Forwarded = 2,
-        Approved = 3,
-        Rejected = 4,
-        Cancelled = 5,
-        Completed = 6
+        ForwardedToRM = 2,
+        ForwardedToManager = 3,
+        PendingAdminApproval = 4,
+        Approved = 5,
+        Rejected = 6,
+        Cancelled = 7,
+        Completed = 8
     }
 }

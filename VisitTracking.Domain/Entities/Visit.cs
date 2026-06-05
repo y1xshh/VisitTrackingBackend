@@ -51,6 +51,8 @@ public partial class Visit
 
     public VisitStatus Status { get; set; } = VisitStatus.Pending;
 
+    public string? WorkflowStatus { get; set; }
+
     public DateTime? CheckInTime { get; set; }
 
     public DateTime? CheckOutTime { get; set; }
