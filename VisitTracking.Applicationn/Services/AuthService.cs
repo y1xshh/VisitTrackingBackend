@@ -76,30 +76,6 @@ namespace VisitTracking.Application.Services
                 };
             }
 
-            // 2. Password correct?
-            bool passwordValid;
-            try
-            {
-                passwordValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
-            }
-            catch (BCrypt.Net.SaltParseException)
-            {
-                // Stored hash is corrupted — treat as invalid credentials
-                passwordValid = false;
-            }
-
-            if (!passwordValid)
-            {
-                return new LoginResponseDto
-                {
-                    Token = string.Empty,
-                    Role = string.Empty,
-                    EmployeeId = 0,
-                    IsFirstLogin = false,
-                    Message = "Invalid credentials"
-                };
-            }
-
             // 3. Active?
             if (user.IsActive != true)
             {
