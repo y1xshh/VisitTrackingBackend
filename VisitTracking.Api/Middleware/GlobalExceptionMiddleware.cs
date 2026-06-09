@@ -1,6 +1,6 @@
 using System.Net;
-using System.Text.Json;
-using VisitTracking.Api.Controllers.Common;
+using FluentValidation;
+using Newtonsoft.Json;
 
 namespace VisitTracking.Api.Middleware
 {
@@ -24,22 +24,29 @@ namespace VisitTracking.Api.Middleware
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unhandled exception while processing request {Path}", context.Request.Path);
-                await WriteResponseAsync(context, HttpStatusCode.InternalServerError, "An unexpected error occurred.");
+
+                context.Response.ContentType = "application/json";
+
+                context.Response.StatusCode = ex switch
+                {
+                    ValidationException => (int)HttpStatusCode.BadRequest,
+                    ArgumentException => (int)HttpStatusCode.BadRequest,
+                    UnauthorizedAccessException => (int)HttpStatusCode.Forbidden,
+                    KeyNotFoundException => (int)HttpStatusCode.NotFound,
+                    InvalidOperationException => (int)HttpStatusCode.Conflict,
+                    _ => (int)HttpStatusCode.InternalServerError
+                };
+
+                var response = new
+                {
+                    success = false,
+                    message = ex is ValidationException or ArgumentException or UnauthorizedAccessException or KeyNotFoundException or InvalidOperationException
+                        ? ex.Message
+                        : "An unexpected error occurred."
+                };
+
+                await context.Response.WriteAsync(JsonConvert.SerializeObject(response));
             }
-        }
-
-        private static async Task WriteResponseAsync(HttpContext context, HttpStatusCode statusCode, string message)
-        {
-            context.Response.ContentType = "application/json";
-            context.Response.StatusCode = (int)statusCode;
-
-            var response = new ApiResponse
-            {
-                Success = false,
-                Message = message
-            };
-
-            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
         }
     }
 }

@@ -10,7 +10,7 @@ namespace VisitTracking.Application.Interface
         Task UpdateAsync(int id, CreateVisitDto dto);
         Task DeleteAsync(int id);
 
-        Task<ApiResponse<VisitApprovalResponseDto>> ApproveVisitAsync(
+        Task<VisitApprovalResponseDto> ApproveVisitAsync(
             int visitId,
             VisitApprovalRequestDto request);
     }

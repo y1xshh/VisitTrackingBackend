@@ -334,6 +334,7 @@ public partial class AppDbContext : DbContext
             entity.HasKey(e => e.Id).HasName("PRIMARY");
             entity.ToTable("visit_approval_histories");
             entity.HasIndex(e => e.VisitId, "VisitId");
+            entity.Property(e => e.VisitId).HasColumnName("Visit_id");
             entity.Property(e => e.ActionByUserId).HasColumnName("action_by_user_id");
             entity.Property(e => e.ActionDateUtc).HasColumnType("datetime").HasColumnName("action_date_utc");
             entity.Property(e => e.InsertedBy).HasMaxLength(50).HasColumnName("inserted_by");

@@ -318,21 +318,16 @@ namespace VisitTracking.Application.Services
             });
         }
 
-        public async Task<ApiResponse<VisitApprovalResponseDto>> ApproveVisitAsync(
+        public async Task<VisitApprovalResponseDto> ApproveVisitAsync(
             int visitId,
             VisitApprovalRequestDto request)
         {
             if (request == null)
-            {
-                return BuildApprovalFailureResponse(visitId, "Invalid request.");
-            }
+                throw new ArgumentException("Invalid request.");
 
             var validation = new VisitApprovalValidator().Validate(request);
             if (!validation.IsValid)
-            {
-                var message = string.Join(" | ", validation.Errors.Select(x => x.ErrorMessage));
-                return BuildApprovalFailureResponse(visitId, message);
-            }
+                throw new ArgumentException(string.Join(" | ", validation.Errors.Select(x => x.ErrorMessage)));
 
             _logger.LogInformation("RAW ACTION = [{Action}]", request.Action);
 
@@ -341,29 +336,21 @@ namespace VisitTracking.Application.Services
             _logger.LogInformation("NORMALIZED ACTION = [{Action}]", action);
 
             if (!IsForwardAction(action) && !IsApproveAction(action) && !IsRejectAction(action))
-            {
-                return BuildApprovalFailureResponse(visitId, "Invalid approval action.");
-            }
+                throw new InvalidOperationException("Invalid approval action.");
 
             var currentUserId = _currentUserService.UserId;
             if (currentUserId <= 0)
-            {
-                return BuildApprovalFailureResponse(visitId, "Invalid user context.");
-            }
+                throw new UnauthorizedAccessException("Invalid user context.");
 
             var role = NormalizeRole(GetCurrentRole());
             var canForward = IsForwardingRole(role);
             var canFinalApprove = IsFinalApproverRole(role);
 
             if (IsForwardAction(action) && !canForward && !canFinalApprove)
-            {
-                return BuildApprovalFailureResponse(visitId, "Unauthorized approval role.");
-            }
+                throw new UnauthorizedAccessException("Unauthorized approval role.");
 
             if ((IsApproveAction(action) || IsRejectAction(action)) && !canFinalApprove)
-            {
-                return BuildApprovalFailureResponse(visitId, "Unauthorized approval role.");
-            }
+                throw new UnauthorizedAccessException("Unauthorized approval role.");
 
             var visit = await _context.Visits
                 .Include(v => v.Employee)
@@ -371,61 +358,25 @@ namespace VisitTracking.Application.Services
                 .FirstOrDefaultAsync(v => v.Id == visitId);
 
             if (visit == null)
-            {
-                return BuildApprovalFailureResponse(visitId, "Visit not found");
-            }
+                throw new KeyNotFoundException("Visit not found");
 
             if (IsProcessedWorkflow(visit.WorkflowStatus))
-            {
-                return BuildApprovalFailureResponse(
-                    visitId,
-                    $"Visit already processed. Current workflow status: {visit.WorkflowStatus}",
-                    visit);
-            }
+                throw new InvalidOperationException($"Visit already processed. Status: {visit.WorkflowStatus}");
 
             if (IsApproveAction(action) &&
                 !string.Equals(visit.WorkflowStatus, "PendingAdminApproval", StringComparison.OrdinalIgnoreCase))
             {
-                return BuildApprovalFailureResponse(
-                    visitId,
-                    $"Visit is not ready for final approval. Current workflow status: {visit.WorkflowStatus}",
-                    visit);
+                throw new InvalidOperationException($"Visit not ready for approval. Status: {visit.WorkflowStatus}");
             }
 
-            try
-            {
-                var actionDateUtc = await ProcessApprovalAsync(visit, request, action, currentUserId);
+            var actionDateUtc = await ProcessApprovalAsync(visit, request, action, currentUserId);
 
-                return ApiResponse<VisitApprovalResponseDto>.SuccessResponse(new VisitApprovalResponseDto
-                {
-                    VisitId = visit.Id,
-                    Status = visit.WorkflowStatus ?? visit.Status.ToString(),
-                    ActionDateUtc = actionDateUtc,
-                    Message = BuildApprovalMessage(visit.Id, visit.WorkflowStatus ?? visit.Status.ToString(), request.ForwardTo)
-                });
-            }
-            catch (Exception ex)
+            return new VisitApprovalResponseDto
             {
-                _logger.LogError(ex, "Failed to process visit approval for VisitId {VisitId}", visitId);
-                return BuildApprovalFailureResponse(visitId, ex.InnerException?.Message ?? ex.Message, visit);
-            }
-        }
-
-        private static ApiResponse<VisitApprovalResponseDto> BuildApprovalFailureResponse(
-            int visitId,
-            string message,
-            Visit? visit = null)
-        {
-            return new ApiResponse<VisitApprovalResponseDto>
-            {
-                Success = false,
-                Message = message,
-                Data = new VisitApprovalResponseDto
-                {
-                    VisitId = visit?.Id ?? visitId,
-                    Status = visit?.WorkflowStatus ?? visit?.Status.ToString() ?? string.Empty,
-                    ActionDateUtc = visit?.UpdatedDate ?? DateTime.UtcNow
-                }
+                VisitId = visit.Id,
+                Status = visit.WorkflowStatus ?? visit.Status.ToString(),
+                ActionDateUtc = actionDateUtc,
+                Message = BuildApprovalMessage(visit.Id, visit.WorkflowStatus ?? visit.Status.ToString(), request.ForwardTo)
             };
         }
 
